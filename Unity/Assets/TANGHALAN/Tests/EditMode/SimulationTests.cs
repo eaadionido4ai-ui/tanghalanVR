@@ -150,7 +150,7 @@ namespace Tanghalan.Tests
             double dt = 0.1, t = 0, quake = -1, walk = -1, after = -1;
             for (int s = 0; s < 3000 && j.Phase != DrillPhase.Arrived; s++, t += dt)
             {
-                if (j.CountdownOver) j.StartNow();
+                if (j.WarningOver) j.StartNow();
                 if (j.Phase == DrillPhase.Shaking && quake < 0) quake = t;
                 if (j.Phase == DrillPhase.Evacuating && walk < 0) walk = t;
                 double q = quake < 0 ? 0 : t - quake;
@@ -227,9 +227,10 @@ namespace Tanghalan.Tests
         {
             var j = new DrillJudge();
             Assert.AreEqual(DrillPhase.Ready, j.Phase);
-            j.Announce(); Assert.AreEqual(DrillPhase.Countdown, j.Phase);
+            j.Announce(); Assert.AreEqual(DrillPhase.Warning, j.Phase);
+            Assert.AreEqual(DrillHint.Warning, j.Hint);
             j.Update(0.1, 0.5, false, false, false, false);
-            Assert.AreEqual(DrillPhase.Shaking, j.Phase, "shaking from GAMA starts the drill even during the countdown");
+            Assert.AreEqual(DrillPhase.Shaking, j.Phase, "shaking from GAMA starts the drill even during the warning");
             for (int k = 0; k < 15; k++) j.Update(0.1, 0, false, true, true, false);
             Assert.AreEqual(DrillPhase.Waiting, j.Phase);
             for (int k = 0; k < 60; k++) j.Update(0.1, 0, false, true, true, false);
@@ -237,8 +238,115 @@ namespace Tanghalan.Tests
             j.Update(0.1, 0, false, false, false, true);
             Assert.AreEqual(DrillPhase.Arrived, j.Phase);
             foreach (DrillHint h in Enum.GetValues(typeof(DrillHint)))
-                if (h != DrillHint.None && h != DrillHint.Countdown)
+                if (h != DrillHint.None)
                     foreach (Lang l in Enum.GetValues(typeof(Lang))) Assert.IsNotEmpty(Strings.Hint(h, l), h + " " + l);
+        }
+
+        [Test]
+        public void TheWarningIsShort()
+        {
+            var j = new DrillJudge();
+            j.Announce();
+            for (int k = 0; k < 29; k++) j.Update(0.1, 0, false, false, false, false);
+            Assert.IsFalse(j.WarningOver);
+            for (int k = 0; k < 2; k++) j.Update(0.1, 0, false, false, false, false);
+            Assert.IsTrue(j.WarningOver, "three seconds from the alarm to the shaking");
+            j.StartNow();
+            Assert.AreEqual(DrillPhase.Shaking, j.Phase);
+        }
+    }
+
+    // when the earthquake comes: after the go bag, alone or with the class
+    public class DrillStartTests
+    {
+        // lets time pass, a tenth of a second at a time; returns the seconds until the drill should begin (-1: it did not).
+        // gamaSays, if given, is called with the number of seconds every two seconds, as GAMA's word comes.
+        static double Wait(DrillStart s, int seconds, bool gama, Action<int> gamaSays = null)
+        {
+            for (int tenth = 0; tenth < seconds * 10; tenth++)
+            {
+                if (gamaSays != null && tenth % 20 == 0) gamaSays(tenth / 10);
+                s.Update(0.1, gama);
+                if (s.Go) return (tenth + 1) / 10.0;
+            }
+            return -1;
+        }
+
+        [Test]
+        public void NothingHappensBeforeTheBagIsZipped()
+        {
+            var s = new DrillStart();
+            Assert.AreEqual(-1, Wait(s, 120, false));
+            Assert.AreEqual(-1, Wait(s, 120, true));
+            Assert.IsFalse(s.WaitingForClass);
+        }
+
+        [Test]
+        public void AloneTheEarthquakeComesAFewSecondsAfterTheBagIsZipped()
+        {
+            var s = new DrillStart();
+            s.BagZipped();
+            Assert.AreEqual(DrillStart.ReadSeconds, Wait(s, 60, false), 0.11);
+            Assert.IsFalse(s.ByGama);
+            s.BagZipped(); // packing again changes nothing
+            Assert.IsTrue(s.Go);
+        }
+
+        [Test]
+        public void WithAClassTheHeadsetWaitsForGama()
+        {
+            var s = new DrillStart();
+            s.BagZipped();
+            // GAMA says every two seconds that 2 of 5 bags are zipped: the headset waits, however long
+            double t = Wait(s, 300, true, now => s.GamaSays(2, 5));
+            Assert.AreEqual(-1, t);
+            Assert.IsTrue(s.WaitingForClass);
+            Assert.AreEqual(2, s.Ready); Assert.AreEqual(5, s.Players);
+            s.GamaStarts();
+            Assert.IsTrue(s.Go); Assert.IsTrue(s.ByGama);
+            Assert.IsFalse(s.WaitingForClass);
+        }
+
+        [Test]
+        public void TheTeacherCanStartTheDrillBeforeTheBagIsZipped()
+        {
+            var s = new DrillStart();
+            s.GamaStarts();
+            Assert.IsTrue(s.Go); Assert.IsTrue(s.ByGama);
+        }
+
+        [Test]
+        public void IfGamaSaysNothingTheHeadsetGoesOnAlone()
+        {
+            var s = new DrillStart();
+            s.BagZipped();
+            Assert.AreEqual(DrillStart.GamaPatience, Wait(s, 60, true), 0.21);
+            Assert.IsFalse(s.ByGama);
+
+            // GAMA spoke at first, then stopped (the laptop went to sleep, or the experiment was stopped)
+            s = new DrillStart();
+            s.BagZipped();
+            double t = Wait(s, 60, true, now => { if (now <= 4) s.GamaSays(1, 3); });
+            Assert.AreEqual(4 + DrillStart.GamaPatience, t, 0.21);
+        }
+
+        [Test]
+        public void IfTheLinkToGamaDropsTheHeadsetGoesOnAlone()
+        {
+            var s = new DrillStart();
+            s.BagZipped();
+            Assert.AreEqual(-1, Wait(s, 20, true, now => s.GamaSays(1, 4)));
+            Assert.AreEqual(0.1, Wait(s, 20, false), 0.01, "the stars have long been read");
+        }
+
+        [Test]
+        public void IfGamaSaysEveryoneIsReadyButNeverStartsTheHeadsetGoesOnAlone()
+        {
+            var s = new DrillStart();
+            s.BagZipped();
+            double t = Wait(s, 120, true, now => s.GamaSays(3, 3));
+            Assert.AreEqual(DrillStart.ReadSeconds + DrillStart.GamaPatience, t, 0.21);
+            Assert.IsFalse(s.WaitingForClass, "nobody is still packing");
         }
     }
 
@@ -351,10 +459,14 @@ namespace Tanghalan.Tests
             var v = new Visit();
             v.Seen.Add("kanal"); v.Seen.Add("gobag"); v.Seen.Add("dch");
             v.Canal.PickUp(0); v.Canal.DropIn(Bin.Rec);
+            Assert.IsFalse(v.GoBagDone);
             v.GoBagStars = 3; v.CarryingGoBag = true;
-            Assert.IsFalse(v.ReadyForDrill, "13 pieces left and no storm watched yet");
+            Assert.IsTrue(v.GoBagDone, "the earthquake comes after the go bag, whatever else was done");
+            Assert.IsFalse(v.CanalDone, "13 pieces left and no storm watched yet");
+            CollectionAssert.Contains(v.Summary(), Strings.Get("end.flood.none", v.Lang));
             v.StormPeakDoor = 0.26; v.StormPeakDoorIfDirty = 0.41;
-            Assert.IsTrue(v.ReadyForDrill);
+            Assert.IsTrue(v.CanalDone);
+            CollectionAssert.DoesNotContain(v.Summary(), Strings.Get("end.flood.none", v.Lang));
             foreach (Lang l in Enum.GetValues(typeof(Lang)))
             {
                 v.Lang = l;

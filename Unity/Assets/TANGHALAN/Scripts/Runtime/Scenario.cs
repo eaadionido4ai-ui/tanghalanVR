@@ -34,14 +34,19 @@ namespace Tanghalan.Vr
         float quakeAsked, lastQuake;
         double gamaIntensity;
         bool gamaQuakeSeen;
+        // GAMA did not answer in time (it was paused, or busy with other headsets' earthquake): this drill's
+        // shaking, or its neighbors, run here to the end, whatever GAMA sends later
+        bool quakeOwn, crowdOwn;
 
         // the neighbors
         public readonly Crowd Crowd = new Crowd();
         public bool CrowdFromGama { get; private set; }
         float lastPeople;
 
-        /// <summary>A teacher started the drill from GAMA.</summary>
-        public event System.Action TeacherStartsDrill;
+        /// <summary>GAMA starts the earthquake drill: every go bag of the class is zipped, or the teacher said so.</summary>
+        public event System.Action DrillCalled;
+        /// <summary>GAMA's count of the class: how many go bags are zipped, of how many headsets.</summary>
+        public event System.Action<int, int> ClassCount;
 
         public Scenario()
         {
@@ -75,7 +80,7 @@ namespace Tanghalan.Vr
         public void StartQuake()
         {
             quakeOn = true; quakeT = 0; afterOn = false; evacuating = false;
-            QuakeFromGama = Gama; gamaQuakeSeen = false;
+            QuakeFromGama = Gama; gamaQuakeSeen = false; quakeOwn = false;
             quakeAsked = lastQuake = Time.time;
             if (QuakeFromGama) TanghalanSimulationManager.Ask("tg_quake");
         }
@@ -85,7 +90,7 @@ namespace Tanghalan.Vr
         {
             evacuating = true; evacT = 0;
             Crowd.Start();
-            CrowdFromGama = Gama;
+            CrowdFromGama = Gama; crowdOwn = false;
             lastPeople = Time.time;
             if (CrowdFromGama) TanghalanSimulationManager.Ask("tg_evacuate");
         }
@@ -120,7 +125,7 @@ namespace Tanghalan.Vr
             if (quakeOn)
             {
                 quakeT += dt;
-                if (QuakeFromGama && now - lastQuake > GamaPatience && quakeT < QuakeSchedule.Duration) { QuakeFromGama = false; Debug.Log("TANGHALAN: GAMA did not send the shaking; running it here."); }
+                if (QuakeFromGama && now - lastQuake > GamaPatience && quakeT < QuakeSchedule.Duration) { QuakeFromGama = false; quakeOwn = true; Debug.Log("TANGHALAN: GAMA did not send the shaking; running it here."); }
                 double local = QuakeSchedule.Main(quakeT);
                 if (evacuating)
                 {
@@ -134,7 +139,7 @@ namespace Tanghalan.Vr
             // the neighbors
             if (Crowd.Started)
             {
-                if (CrowdFromGama && now - lastPeople > GamaPatience) { CrowdFromGama = false; Debug.Log("TANGHALAN: GAMA did not send the neighbors; moving them here."); }
+                if (CrowdFromGama && now - lastPeople > GamaPatience) { CrowdFromGama = false; crowdOwn = true; Debug.Log("TANGHALAN: GAMA did not send the neighbors; moving them here."); }
                 if (!CrowdFromGama) Crowd.Step(dt);
             }
         }
@@ -160,13 +165,18 @@ namespace Tanghalan.Vr
                 case "storm_end":
                     if (StormRunning && StormFromGama) { StormRunning = false; StormDone = true; Rain = 0; }
                     break;
+                case "storm_busy":
+                    // GAMA is running a classmate's storm, and runs one at a time: this one runs here
+                    if (StormRunning) StormFromGama = false;
+                    break;
                 case "quake":
+                    if (quakeOwn) return;
                     gamaIntensity = (double)o["i"] / 1000.0;
                     QuakeFromGama = true; gamaQuakeSeen = true; lastQuake = now;
                     break;
                 case "people":
                     var p = o["p"] as JArray;
-                    if (p == null) return;
+                    if (p == null || crowdOwn) return;
                     int n = Mathf.Min(Crowd.People.Count, p.Count / 5);
                     for (int k = 0; k < n; k++)
                     {
@@ -178,8 +188,12 @@ namespace Tanghalan.Vr
                     }
                     CrowdFromGama = true; lastPeople = now;
                     break;
+                case "class":
+                    var ready = o["ready"]; var players = o["players"];
+                    if (ready != null && players != null && ClassCount != null) ClassCount((int)ready, (int)players);
+                    break;
                 case "drill":
-                    if (TeacherStartsDrill != null) TeacherStartsDrill();
+                    if (DrillCalled != null) DrillCalled();
                     break;
             }
         }

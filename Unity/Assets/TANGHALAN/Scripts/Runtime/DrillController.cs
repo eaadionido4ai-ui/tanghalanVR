@@ -1,7 +1,9 @@
 // The earthquake drill that ends the visit, and the walk to the evacuation center.
 //
-// 1. The drill is announced (on the tasks board when the tour is done, by itself when the last task is done,
-//    or by a teacher from GAMA), and Bayani counts down.
+// 1. The earthquake comes after the go bag (DrillStart in Tanghalan.Core). Alone, that is a few seconds after
+//    the bag is zipped. With a class on GAMA, GAMA starts it for everyone once every bag is zipped, or when
+//    the teacher says so; until then the visitor waits, and may pack again.
+//    The alarm rings, the ground trembles and Bayani calls "Duck, Cover, and Hold"; three seconds later:
 // 2. The ground shakes (GAMA sends how strongly; without GAMA, QuakeSchedule). The pictures rattle, the
 //    controllers rumble, a deep sound fills the room; the visitor's view itself never shakes, for comfort.
 // 3. Duck (crouch for real, or press A), Cover (point at the nearest sturdy table and press the trigger: the
@@ -22,16 +24,17 @@ namespace Tanghalan.Vr
         readonly TanghalanApp app;
         readonly World world;
         readonly DrillJudge judge;
+        readonly DrillStart start;
         readonly Dictionary<Transform, Vector3> rattleHome = new Dictionary<Transform, Vector3>();
         readonly List<GameObject> arrows = new List<GameObject>();
         readonly List<Transform> neighbors = new List<Transform>();
         Transform neighborsRoot;
         Panel comeOut, summary;
         string coverId;
-        bool covered, teacherWaiting, autoAnnounced, crowdShown, reported, shakingStarted;
+        bool covered, crowdShown, reported, shakingStarted, saidGoInside, wasWaiting;
         DrillHint lastHint = DrillHint.None;
-        int lastCount = -1;
-        float nextHaptic;
+        int zipStars, lastReady = -1, lastPlayers = -1;
+        float nextHaptic, nextTell;
         Mesh arrowMesh;
         Material arrowMat;
 
@@ -41,6 +44,7 @@ namespace Tanghalan.Vr
         {
             this.app = app; world = app.World;
             judge = app.Visit.Drill;
+            start = app.Visit.DrillStart;
             foreach (var kv in world.Hot)
             {
                 if (!kv.Key.StartsWith("drill_")) continue;
@@ -48,35 +52,79 @@ namespace Tanghalan.Vr
                 var p = kv.Value.gameObject.AddComponent<Pointable>();
                 p.Reach = 4.5f;
                 p.OnPress = () => TakeCover(id);
-                p.CanPress = () => !covered && (judge.Phase == DrillPhase.Countdown || judge.Phase == DrillPhase.Shaking);
+                p.CanPress = () => !covered && (judge.Phase == DrillPhase.Warning || judge.Phase == DrillPhase.Shaking);
             }
             foreach (var t in world.Pictures) rattleHome[t] = t.localPosition;
             arrowMat = world.FlatMaterial(Palette.Gold);
             arrowMesh = MakeArrow();
         }
 
-        /// <summary>From the start of the countdown until the visitor reaches the evacuation center.</summary>
+        /// <summary>From the alarm until the visitor reaches the evacuation center.</summary>
         public bool Busy { get { return judge.Phase != DrillPhase.Ready && judge.Phase != DrillPhase.Arrived; } }
 
         // ---------- starting ----------
 
-        public void Announce()
+        /// <summary>The go bag was zipped: the earthquake comes after it.</summary>
+        public void BagZipped(int stars)
         {
-            if (judge.Phase != DrillPhase.Ready) return;
-            if (app.OnStreet) { teacherWaiting = true; app.Hud.Show(Strings.Get("drill.announce", L), 6); return; }
-            app.Tour.Close();
-            app.Street.ClearWater();
-            app.GoBag.ShowTablesForDrill();
-            judge.Announce();
-            app.Bayani.Say(Strings.Get("drill.announce", L), 10);
-            app.Scenario.Report("drill", "announced");
+            if (judge.Phase != DrillPhase.Ready || start.Go) return;
+            zipStars = stars;
+            start.BagZipped();
+            TellGama();
         }
 
-        /// <summary>A teacher started the drill from GAMA: it begins as soon as the visitor is inside the museum.</summary>
-        public void StartFromTeacher()
+        // GAMA counts the class's zipped bags. It is told again from time to time while the visitor waits, in
+        // case it connected late or missed the first word.
+        void TellGama()
         {
-            app.Visit.DrillStartedByTeacher = true;
-            if (judge.Phase == DrillPhase.Ready) { teacherWaiting = true; }
+            nextTell = Time.time + 4f;
+            TanghalanSimulationManager.Ask("tg_bag", "stars", zipStars.ToString());
+        }
+
+        /// <summary>GAMA's count of the class: how many go bags are zipped, of how many headsets.</summary>
+        public void ClassCount(int ready, int players) { start.GamaSays(ready, players); }
+
+        /// <summary>GAMA starts the drill: every bag of the class is zipped, or the teacher said so.</summary>
+        public void CalledByGama() { if (judge.Phase == DrillPhase.Ready) start.GamaStarts(); }
+
+        // before the alarm: is it time?
+        void WaitForTheStart()
+        {
+            start.Update(Time.deltaTime, Scenario.Gama);
+            if (start.Zipped && !start.Go && Scenario.Gama && Time.time >= nextTell) TellGama();
+            // waiting for classmates who are still packing: say so once, and keep the count on the Go Bag Room's wall
+            bool waiting = start.WaitingForClass;
+            if (waiting != wasWaiting || waiting && (start.Ready != lastReady || start.Players != lastPlayers))
+            {
+                if (waiting && !wasWaiting)
+                {
+                    string line = Strings.Format("gobag.waiting", L, start.Ready, start.Players);
+                    app.Hud.Show(line, 8); app.Bayani.Say(line);
+                }
+                wasWaiting = waiting; lastReady = start.Ready; lastPlayers = start.Players;
+                app.GoBag.ShowWaiting();
+            }
+            if (!start.Go) return;
+            // the tables to hide under are inside the museum: a visitor on the street is called back in first
+            if (!app.OnStreet) Announce();
+            else if (!saidGoInside)
+            {
+                saidGoInside = true;
+                string line = Strings.Get("drill.inside", L);
+                app.Hud.Show(line, 10); app.Bayani.Say(line, 10);
+            }
+        }
+
+        // the alarm rings; the shaking follows after the short warning
+        void Announce()
+        {
+            if (judge.Phase != DrillPhase.Ready) return;
+            app.Tour.Close();
+            app.Street.ClearWater();
+            app.GoBag.PrepareForDrill();
+            judge.Announce();
+            Sfx.Play("alarm", 0.8f);
+            app.Scenario.Report("drill", start.ByGama ? "started by GAMA" : "started after the go bag");
         }
 
         // ---------- Cover ----------
@@ -139,35 +187,30 @@ namespace Tanghalan.Vr
             var s = app.Scenario;
             if (judge.Phase == DrillPhase.Ready)
             {
-                // the drill begins by itself once the tour is done, or when a teacher starts it, inside the museum
-                if (!autoAnnounced && app.Started && app.Visit.ReadyForDrill && !app.OnStreet && !app.GoBag.Packing) { autoAnnounced = true; Announce(); }
-                if (teacherWaiting && !app.OnStreet && app.Started) { teacherWaiting = false; Announce(); }
+                if (!app.Started) return;
+                WaitForTheStart();
                 if (judge.Phase == DrillPhase.Ready) return;
             }
             var rig = app.Rig;
             if (!covered && rig.DuckPressed) rig.ToggleDuck();
 
-            if (judge.Phase == DrillPhase.Countdown)
-            {
-                int left = Mathf.CeilToInt((float)(judge.CountdownSeconds - judge.PhaseTime));
-                if (left != lastCount) { lastCount = left; app.Hud.Show(Strings.Get("drill.announce", L) + "\n" + Strings.Format("drill.countdown", L, left)); }
-                if (judge.CountdownOver || app.Visit.DrillStartedByTeacher && !shakingStarted) { BeginShaking(); }
-            }
+            if (judge.WarningOver) BeginShaking();
 
             var feet = rig.Feet;
             bool atCenter = Evacuation.AtCenter(WebSpace.WebX(feet), WebSpace.WebZ(feet));
             var before = judge.Phase;
             judge.Update(Time.deltaTime, s.Intensity, rig.Ducked || covered, covered, covered && rig.Holding, atCenter);
 
-            // the shaking you see, hear and feel
+            // the shaking you see, hear and feel; in the warning the ground only trembles
             float k = (float)s.Intensity;
+            if (judge.Phase == DrillPhase.Warning) k = Mathf.Max(k, 0.12f);
             Sfx.Rumble(k);
             foreach (var kv in rattleHome)
                 if (kv.Key != null) kv.Key.localPosition = kv.Value + (k > 0.01f ? Random.insideUnitSphere * 0.018f * k : Vector3.zero);
             if (k > 0.05f && Time.time > nextHaptic) { nextHaptic = Time.time + 0.12f; rig.Haptic(0.25f + 0.6f * k, 0.1f); }
 
             if (judge.Phase != before) OnPhase(before);
-            if (judge.Hint != lastHint && judge.Phase != DrillPhase.Countdown)
+            if (judge.Hint != lastHint)
             {
                 lastHint = judge.Hint;
                 string line = Strings.Hint(judge.Hint, L);
@@ -182,7 +225,6 @@ namespace Tanghalan.Vr
         void BeginShaking()
         {
             shakingStarted = true;
-            Sfx.Play("alarm", 0.8f);
             app.Scenario.StartQuake();
             judge.StartNow();
             app.Bayani.Crouch(true);

@@ -1,7 +1,10 @@
-// The earthquake drill that ends the visit: the ground shakes, the visitor does Duck, Cover and Hold under a
-// sturdy table, waits until it is safe, then walks to the evacuation center on the street. On the way there
-// an aftershock may come, and then the visitor stops and ducks, protecting the head.
+// The earthquake drill that ends the visit. It comes after the go bag: the visitor zips the bag, and a few
+// seconds later the ground shakes. The visitor does Duck, Cover and Hold under a sturdy table, waits until
+// it is safe, then walks to the evacuation center on the street. On the way there an aftershock may come,
+// and then the visitor stops and ducks, protecting the head.
 //
+// DrillStart says when the earthquake comes: by itself after the go bag, or, with a class on GAMA, when
+// every headset has zipped its bag, so that the class drills together.
 // QuakeSchedule says how strongly the ground shakes over time. GAMA runs the same schedule and sends it to
 // Unity (GAMA/models/TANGHALAN.gaml); without GAMA, Unity runs it itself.
 // DrillJudge follows what the visitor does and gives the result. It only needs to know how strong the
@@ -10,6 +13,67 @@ using System;
 
 namespace Tanghalan
 {
+    /// <summary>
+    /// When the earthquake comes. The go bag is the last thing before it.
+    ///   Alone (GAMA not connected): ReadSeconds after the bag is zipped, the time to read the stars.
+    ///   With a class (GAMA connected): when GAMA starts it, which it does once every headset has zipped its
+    ///   bag, or when the teacher says so. Until then the visitor may pack again. If GAMA says nothing for
+    ///   GamaPatience seconds, the headset goes on alone.
+    /// </summary>
+    public sealed class DrillStart
+    {
+        /// <summary>Seconds between zipping the bag and the earthquake. GAMA waits as long (drill_delay in the GAML model).</summary>
+        public const double ReadSeconds = 8;
+        /// <summary>Seconds without a word from GAMA, after the bag is zipped, before the headset goes on alone.</summary>
+        public const double GamaPatience = 10;
+
+        /// <summary>The go bag has been zipped.</summary>
+        public bool Zipped { get; private set; }
+        /// <summary>True from the moment the drill should begin.</summary>
+        public bool Go { get; private set; }
+        /// <summary>True if GAMA started the drill (the class was ready, or the teacher said so).</summary>
+        public bool ByGama { get; private set; }
+        /// <summary>GAMA's count: how many headsets have zipped their bag, of how many in the class.</summary>
+        public int Ready { get; private set; }
+        public int Players { get; private set; }
+
+        double sinceZip, sinceGama, sinceAllReady;
+        bool withGama;
+
+        /// <summary>The bag is zipped, and GAMA is waiting for classmates who are still packing.</summary>
+        public bool WaitingForClass { get { return Zipped && !Go && withGama && Players > Ready; } }
+
+        public void BagZipped()
+        {
+            if (Zipped) return;
+            Zipped = true; sinceZip = 0; sinceGama = 0;
+        }
+
+        /// <summary>GAMA's word on the class (it comes every two seconds).</summary>
+        public void GamaSays(int ready, int players)
+        {
+            Ready = ready; Players = players; sinceGama = 0;
+        }
+
+        /// <summary>GAMA starts the drill. The teacher can do this even before the bag is zipped.</summary>
+        public void GamaStarts()
+        {
+            if (Go) return;
+            Go = true; ByGama = true;
+        }
+
+        public void Update(double dt, bool gamaConnected)
+        {
+            if (Go || !Zipped) return;
+            sinceZip += dt; sinceGama += dt;
+            withGama = gamaConnected && sinceGama <= GamaPatience;
+            if (!withGama) { if (sinceZip >= ReadSeconds) Go = true; return; }
+            // GAMA says every bag is zipped: its drill should come ReadSeconds later; if it does not, go on alone
+            if (Players <= Ready) sinceAllReady += dt; else sinceAllReady = 0;
+            if (sinceAllReady >= ReadSeconds + GamaPatience) Go = true;
+        }
+    }
+
     public static class QuakeSchedule
     {
         /// <summary>Seconds of the main shaking: it builds up, holds, then dies down.</summary>
@@ -44,8 +108,8 @@ namespace Tanghalan
     {
         /// <summary>The drill has not started.</summary>
         Ready,
-        /// <summary>The drill was announced; the shaking starts when the countdown ends.</summary>
-        Countdown,
+        /// <summary>The alarm rings and Bayani calls "Duck, Cover and Hold"; the shaking starts a moment later.</summary>
+        Warning,
         /// <summary>The ground is shaking: Duck, Cover, Hold.</summary>
         Shaking,
         /// <summary>The shaking stopped: stay under cover a few seconds more and look around.</summary>
@@ -61,7 +125,7 @@ namespace Tanghalan
     /// <summary>What Bayani tells the visitor to do now. Strings.Hint gives the words.</summary>
     public enum DrillHint
     {
-        None, Countdown, Duck, Cover, Hold, GoodStay, StayUnderCover, Wait, WalkOut, KeepWalking,
+        None, Warning, Duck, Cover, Hold, GoodStay, StayUnderCover, Wait, WalkOut, KeepWalking,
         AftershockDuck, AftershockGood, Arrived,
     }
 
@@ -84,8 +148,8 @@ namespace Tanghalan
 
     public sealed class DrillJudge
     {
-        /// <summary>Seconds of countdown after the drill is announced.</summary>
-        public double CountdownSeconds = 10;
+        /// <summary>Seconds of warning, from the alarm to the shaking.</summary>
+        public double WarningSeconds = 3;
         /// <summary>Seconds to stay under cover after the shaking stops, before walking out.</summary>
         public double WaitSeconds = 5;
         /// <summary>Shaking weaker than this counts as no shaking.</summary>
@@ -106,16 +170,16 @@ namespace Tanghalan
         public void Announce()
         {
             if (Phase != DrillPhase.Ready) return;
-            Set(DrillPhase.Countdown, DrillHint.Countdown);
+            Set(DrillPhase.Warning, DrillHint.Warning);
         }
 
-        /// <summary>Starts the drill straight away, without a countdown (when GAMA starts it).</summary>
+        /// <summary>The shaking starts now (the warning is over).</summary>
         public void StartNow()
         {
-            if (Phase == DrillPhase.Ready || Phase == DrillPhase.Countdown) BeginShaking();
+            if (Phase == DrillPhase.Ready || Phase == DrillPhase.Warning) BeginShaking();
         }
 
-        public bool CountdownOver { get { return Phase == DrillPhase.Countdown && PhaseTime >= CountdownSeconds; } }
+        public bool WarningOver { get { return Phase == DrillPhase.Warning && PhaseTime >= WarningSeconds; } }
 
         void Set(DrillPhase p, DrillHint h) { Phase = p; Hint = h; PhaseTime = 0; }
 
@@ -137,8 +201,8 @@ namespace Tanghalan
             bool shaking = intensity > Threshold;
             switch (Phase)
             {
-                case DrillPhase.Countdown:
-                    if (shaking) BeginShaking(); // GAMA started it before the countdown ended
+                case DrillPhase.Warning:
+                    if (shaking) BeginShaking(); // GAMA's shaking came before the warning ended
                     break;
 
                 case DrillPhase.Shaking:

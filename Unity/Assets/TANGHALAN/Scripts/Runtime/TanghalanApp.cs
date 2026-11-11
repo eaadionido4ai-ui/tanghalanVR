@@ -6,7 +6,7 @@
 //   Tour            the works on the walls and the story stands, the start card, the tasks board
 //   Street          the canal clean-up and the replay of the storm (Stop Hazards Early)
 //   GoBagRoom       the go bag game (Get Ready)
-//   DrillController the earthquake drill and the walk to the evacuation center
+//   DrillController the earthquake drill, which comes after the go bag, and the walk to the evacuation center
 // Scenario says what GAMA (or, without GAMA, Tanghalan.Core) is doing: the storm, the shaking, the neighbors.
 using System.Collections;
 using TMPro;
@@ -56,7 +56,8 @@ namespace Tanghalan.Vr
             pointer.Rig = Rig;
             SetUpTeleporting();
             Scenario = new Scenario();
-            Scenario.TeacherStartsDrill += () => { if (Drill != null) Drill.StartFromTeacher(); };
+            Scenario.DrillCalled += () => { if (Drill != null) Drill.CalledByGama(); };
+            Scenario.ClassCount += (ready, players) => { if (Drill != null) Drill.ClassCount(ready, players); };
 
             Bayani = new GameObject("Bayani").AddComponent<Bayani>();
             Bayani.Init(World, Rig, World.Point("bayani_lobby"));

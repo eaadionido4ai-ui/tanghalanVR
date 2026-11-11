@@ -284,7 +284,6 @@ global {
 					name <- "evacuee" + k;
 					adult <- m = 0;
 					shirt <- shirts[k];
-				color <- colors[k];
 					color <- colors[k];
 					delay <- 1.0 + h * 2.5 + m * 0.8;
 					speed_ms <- m = 0 ? 1.05 : 1.15;

@@ -39,8 +39,7 @@ namespace Tanghalan
             { "tasks.canal", new[] { "Clear the canal on the street (Stop Hazards Early hall)", "Linisin ang kanal sa kalye (bulwagang Stop Hazards Early)" } },
             { "tasks.gobag", new[] { "Pack a go bag (Go Bag Room)", "Mag-empake ng go bag (Go Bag Room)" } },
             { "tasks.drill", new[] { "Earthquake drill, then go to the evacuation center", "Earthquake drill, at pumunta sa evacuation center" } },
-            { "tasks.startdrill", new[] { "Start the earthquake drill", "Simulan ang earthquake drill" } },
-            { "tasks.notyet", new[] { "Finish the tasks above first, or ask your teacher.", "Tapusin muna ang mga gawain sa itaas, o magtanong sa guro." } },
+            { "tasks.last", new[] { "Pack your go bag last: the earthquake drill comes right after it.", "Ihuli ang pag-empake ng go bag: kasunod nito ang earthquake drill." } },
 
             // ---- reading a work ----
             { "work.by", new[] { "by {0}, {1} years old · {2} · {3}", "ni {0}, {1} taong gulang · {2} · {3}" } },
@@ -103,6 +102,8 @@ namespace Tanghalan
             { "gobag.try", new[] { "Nice try!", "Magaling na pagsubok!" } },
             { "gobag.remind", new[] { "Keep your family go bag near the door, and check it with a grown-up every few months.", "Ilagay ang go bag ng pamilya malapit sa pinto, at suriin ito kasama ang isang nakatatanda tuwing ilang buwan." } },
             { "gobag.best", new[] { "Your best", "Pinakamahusay mo" } },
+            { "gobag.last", new[] { "The earthquake drill comes right after the go bag. Have you seen the works and the street yet?", "Kasunod ng go bag ang earthquake drill. Nakita mo na ba ang mga likha at ang kalye?" } },
+            { "gobag.waiting", new[] { "Waiting for your classmates: {0} of {1} go bags are zipped. You can pack again for more stars.", "Hinihintay ang mga kaklase mo: {0} sa {1} go bag ang nakasara na. Puwede kang mag-empake muli para sa mas maraming bituin." } },
             { "gobag.cabinet", new[] { "the cabinet", "ang aparador" } },
             { "gobag.drawers", new[] { "the drawers", "ang mga drawer" } },
             { "gobag.crate", new[] { "the crate", "ang kahon" } },
@@ -110,8 +111,10 @@ namespace Tanghalan
             { "fire.soon", new[] { "Fire Practice is coming soon to TANGHALAN VR. Its rules are ready; the room is not yet built.", "Malapit na ang Fire Practice sa TANGHALAN VR. Handa na ang mga patakaran; hindi pa tapos ang silid." } },
 
             // ---- the earthquake drill ----
-            { "drill.announce", new[] { "Earthquake drill! Look around: where is the nearest sturdy table?", "Earthquake drill! Tumingin sa paligid: nasaan ang pinakamalapit na matibay na mesa?" } },
-            { "drill.countdown", new[] { "The drill starts in {0}...", "Magsisimula ang drill sa {0}..." } },
+            // The Filipino uses the web app's words for the drill: yuko, takip, kapit. Schools in the Philippines also
+            // know it by its English name, Duck, Cover, and Hold, so Bayani's call says both.
+            { "drill.Warning", new[] { "Earthquake! Duck, Cover, and Hold! Find the nearest sturdy table.", "Lindol! Duck, Cover, and Hold: yuko, takip, kapit! Hanapin ang pinakamalapit na matibay na mesa." } },
+            { "drill.inside", new[] { "The earthquake drill is starting. Go back inside the museum.", "Magsisimula na ang earthquake drill. Bumalik sa loob ng museo." } },
             { "drill.Duck", new[] { "Earthquake! DUCK down low!", "Lindol! YUMUKO!" } },
             { "drill.Cover", new[] { "COVER: get under the sturdy table! Point at it and press the trigger.", "TAKIP: pumailalim sa matibay na mesa! Ituro ito at pindutin ang trigger." } },
             { "drill.Hold", new[] { "HOLD on to the table leg! Squeeze the grip button.", "KUMAPIT sa paa ng mesa! Pisilin ang grip button." } },
@@ -134,6 +137,7 @@ namespace Tanghalan
             { "end.canal", new[] { "Canal: {0} of {1} pieces of trash cleared, {2} sorted right", "Kanal: {0} sa {1} basura ang nalinis, {2} ang tamang naihiwalay" } },
             { "end.canal.none", new[] { "Canal: not cleared this time", "Kanal: hindi nalinis ngayon" } },
             { "end.flood", new[] { "The rain at Rico's door: {0} (if nobody cleaned: {1})", "Ulan sa pinto ni Rico: {0} (kung walang naglinis: {1})" } },
+            { "end.flood.none", new[] { "The rain at Rico's door: not watched this time", "Ulan sa pinto ni Rico: hindi napanood ngayon" } },
             { "end.gobag", new[] { "Go bag: {0} stars", "Go bag: {0} bituin" } },
             { "end.gobag.none", new[] { "Go bag: not packed this time", "Go bag: hindi nai-empake ngayon" } },
             { "end.gobag.carried", new[] { "You brought your go bag to the evacuation center.", "Dinala mo ang go bag mo sa evacuation center." } },
@@ -163,7 +167,7 @@ namespace Tanghalan
 
         public static string Hint(DrillHint h, Lang lang)
         {
-            return h == DrillHint.None || h == DrillHint.Countdown ? "" : Get("drill." + h, lang);
+            return h == DrillHint.None ? "" : Get("drill." + h, lang);
         }
 
         /// <summary>How a depth of water reads for a child: dry, ankle-deep, knee-deep or waist-deep.</summary>

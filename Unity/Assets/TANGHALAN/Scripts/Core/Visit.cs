@@ -1,12 +1,13 @@
-// One visit to TANGHALAN VR, from the lobby to the evacuation center: what the visitor has done so far, when
-// the earthquake drill may begin, and the summary shown at the end.
+// One visit to TANGHALAN VR, from the lobby to the evacuation center: what the visitor has done so far, and
+// the summary shown at the end. The earthquake drill comes after the go bag (DrillStart), whatever else the
+// visitor has or has not done; the summary says what was left out.
 using System.Collections.Generic;
 
 namespace Tanghalan
 {
     public sealed class Visit
     {
-        /// <summary>How many works to look at before the drill unlocks by itself.</summary>
+        /// <summary>How many works to look at for the first task on the board.</summary>
         public const int WorksToSee = 3;
 
         public Lang Lang = Lang.Fil;
@@ -17,15 +18,12 @@ namespace Tanghalan
         public double? StormPeakDoor, StormPeakDoorIfDirty;
         public int? GoBagStars;
         public bool CarryingGoBag;
+        public readonly DrillStart DrillStart = new DrillStart();
         public readonly DrillJudge Drill = new DrillJudge();
-        public bool DrillStartedByTeacher;
 
         public bool WorksDone { get { return Seen.Count >= WorksToSee; } }
         public bool CanalDone { get { return Canal.Left == 0 || StormPeakDoor != null; } }
         public bool GoBagDone { get { return GoBagStars != null; } }
-
-        /// <summary>The drill unlocks when the three tasks are done (a teacher can start it any time from GAMA).</summary>
-        public bool ReadyForDrill { get { return WorksDone && CanalDone && GoBagDone; } }
 
         public bool Over { get { return Drill.Phase == DrillPhase.Arrived; } }
 
@@ -41,6 +39,8 @@ namespace Tanghalan
                 lines.Add(Strings.Get("end.canal.none", L));
             if (StormPeakDoor != null)
                 lines.Add(Strings.Format("end.flood", L, Strings.Depth(StormPeakDoor.Value, L), Strings.Depth(StormPeakDoorIfDirty ?? 0, L)));
+            else
+                lines.Add(Strings.Get("end.flood.none", L));
             if (GoBagStars != null)
             {
                 lines.Add(Strings.Format("end.gobag", L, GoBagStars.Value));

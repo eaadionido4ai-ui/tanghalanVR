@@ -24,7 +24,8 @@ TANGHALAN web app. A tool exports them with the web app's own code, so the two s
 ## The visit
 
 1. **Lobby.** Choose Filipino or English and start. Bayani, the museum's guide, walks beside you. The tasks board
-   on the left wall shows what to do. The board on the right shows whether GAMA is connected.
+   on the left wall shows what to do, and says to pack the go bag last: the earthquake drill comes right after
+   it. The board on the right shows whether GAMA is connected.
 2. **The halls.** Point at a drawing or a story stand and press the trigger. A card opens with the work, its text in
    Filipino or English, and Bayani's tip.
 3. **The street** (through the door in the *Stop Hazards Early* hall). This is the street from Rico's story "Ang
@@ -39,20 +40,24 @@ TANGHALAN web app. A tool exports them with the web app's own code, so the two s
      cabinet, the drawers, the crate and the cooler.
    - Look at each thing, then pack it or leave it. The bag hangs from your left hand and swells as it fills. Over
      14 weight units, you walk slower.
-   - Zip it up to see your stars.
-5. **The earthquake drill** (after the tour, or when a teacher starts it from GAMA).
-   - Bayani counts down, then the ground shakes. The pictures rattle, the controllers rumble and a deep sound
-     fills the room. Your own view never shakes, for comfort.
+   - Zip it up to see your stars. Zipping the bag is what brings the earthquake.
+5. **The earthquake drill.** It comes about 8 seconds after the go bag is zipped, whatever else you have or have
+   not done yet. (With a class on GAMA, it comes when everyone's bag is zipped: see
+   [Running it](#running-it).)
+   - The alarm rings, the ground trembles, and Bayani calls "Earthquake! Duck, Cover, and Hold!". Three seconds
+     later the ground shakes. The pictures rattle, the controllers rumble and a deep sound fills the room. Your
+     own view never shakes, for comfort.
    - **Duck**: crouch, or press A. **Cover**: point at the nearest sturdy table and press the trigger; you are moved
      under it. **Hold**: squeeze a grip button until the shaking stops. Then wait a moment.
 6. **The evacuation.**
    - Arrows on the floor show the safe route: out of the street door, down the steps, over the bridge, along the
-     sidewalk to the covered court, the barangay's evacuation center.
+     sidewalk to the covered court, the barangay's evacuation center. Your go bag comes with you.
    - Bayani walks ahead. The neighbors leave their houses and walk there too; GAMA moves them.
    - An aftershock comes on the way: stop, duck and cover your head.
 7. **At the evacuation center.** Bayani checks that everyone is there, and the board shows the visit: the works
    you saw, the canal, the flood at Rico's door, the go bag's stars, and the drill (how fast you ducked and took
-   cover, how long you held on, your walk to the center).
+   cover, how long you held on, your walk to the center). It also says what you left out, such as a canal you
+   did not clear.
 
 The Fire Safety Room is in the museum, but its game is not built yet in VR. Its rules are ported and tested, and
 the room says "coming soon".
@@ -91,8 +96,19 @@ OpenJDK and the Android SDK & NDK tools. See the SIMPLE guide:
 3. Launch **TANGHALAN VR** from the WebPlatform, then start the app in Unity or on the headsets.
 
 The board in the lobby says when GAMA is connected. While it is, GAMA runs the storm, the earthquake and the
-neighbors, and its **Start the earthquake drill** button starts the drill on every headset. GAMA also writes what
-the visitors do to `GAMA/results/tanghalan_log.csv` (by headset id only, no names).
+neighbors. GAMA also writes what the visitors do to `GAMA/results/tanghalan_log.csv` (by headset id only, no
+names).
+
+**A class on GAMA drills together.** Up to 6 headsets can join one session.
+
+- Each headset tells GAMA when its go bag is zipped. GAMA's map shows how many are.
+- A visitor who zips early reads "Waiting for your classmates: 3 of 5 go bags are zipped", and can pack again
+  for more stars.
+- When every bag is zipped, GAMA waits 8 seconds and starts the earthquake on all the headsets at once: the same
+  shaking, the same neighbors on the street, the same aftershock.
+- The teacher can start it at any time with GAMA's **Start the earthquake drill** button.
+
+Each visitor still has their own museum, Bayani and score: the visitors do not see each other yet.
 
 **Without GAMA**, after a few seconds, or as soon as GAMA stops answering, the app runs the same models itself (in
 `Tanghalan.Core`). A class without a laptop can still play. See [GAMA/README.md](GAMA/README.md) for the messages
@@ -109,7 +125,7 @@ Unity/                          the SIMPLE Unity Template VR (Unity 6000.3.8f1),
       MuseumData, GoBagItems    the rooms, works and items, written from the web app's content (Generated/)
       StreetPlan, FloodModel    the street's grid and its flood
       Waste                     the canal's trash and the three bins
-      Drill, Evacuation         the earthquake, Duck-Cover-Hold, the way out, the neighbors
+      Drill, Evacuation         when the earthquake comes, Duck-Cover-Hold, the way out, the neighbors
       Strings, Visit            every text in English and Filipino; the visit and its summary
     Scripts/Runtime/            the Unity side: TanghalanApp (the visit), World (loading the models), Rig (the player),
                                 Ui (panels, pointing), Tour, Street, GoBagRoom, DrillController, Bayani, Sfx,
@@ -148,9 +164,9 @@ Unity a point (x, y, z) is at (x, y, -z), and in GAMA it is at (x + 30, z + 25).
 
 | Check | How | Result |
 |---|---|---|
-| The rules match the web app | the web app's tests, ported (`Tests/`); the same go bag rounds for the same seeds | 35 tests pass |
+| The rules match the web app | the web app's tests, ported (`Tests/`); the same go bag rounds for the same seeds | 43 tests pass |
 | The flood | C# against the Python reference, step by step; water conserved; more trash, deeper water | pass |
-| The drill and the evacuation | scored runs of the drill; every room has a way out through a doorway; all neighbors arrive | pass |
+| The drill and the evacuation | when the earthquake comes (alone, with a class, with GAMA silent); scored runs of the drill; every room has a way out through a doorway; all neighbors arrive | pass |
 | Unity, GAMA and the reference agree | `Tools/check_constants.py` | pass |
 | The Unity scripts compile | `Tools/unity-compile-check`: the template and TANGHALAN VR, against Unity 6000.3.8f1's libraries and the packages' sources | pass |
 | The models look right | renders from the Blender files (`Tools/blender/render_previews.py`) | checked by eye |
@@ -167,6 +183,9 @@ So the first things to do are: open the project in Unity 6000.3.8f1, play the ma
   the drill, and the summary. The works' own texts are the web app's.
 - Record narration, so the works and Bayani can be heard as well as read.
 - Build the Fire Safety Room's game in VR, on its ported rules.
+- Show classmates to each other in the museum (the SIMPLE plugin can; TANGHALAN VR does not use it yet).
+- A drill for a visitor who is outdoors when the earthquake comes. For now, a visitor on the street is called
+  back inside the museum first.
 - Replace the sample works with learners' own, with consent.
 
 ## Credits

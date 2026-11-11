@@ -3,6 +3,10 @@
 // crate and cooler (Difficult), pack them or leave them, then zip the bag up and see the stars. In VR the
 // bag hangs from the left hand (with no headset, it sits at the bottom left of the view); point at it to see
 // what is inside and take things out.
+//
+// Zipping the bag is what brings the earthquake drill (DrillController). With a class on GAMA the visitor may
+// have to wait for classmates, and can pack again meanwhile; a round that is still going when the earthquake
+// comes stops there, and the bag counts as it is.
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -28,7 +32,7 @@ namespace Tanghalan.Vr
         readonly List<Piece> pieces = new List<Piece>();
         readonly HashSet<string> opened = new HashSet<string>();
         Phase phase = Phase.Idle;
-        bool hard, heavySaid, leftSaid, wasIn;
+        bool hard, heavySaid, leftSaid, wasIn, lastSaid;
         List<GoBagItem> tray;
         Panel menu, card, bagPanel, best;
         GameObject bag;
@@ -37,7 +41,6 @@ namespace Tanghalan.Vr
         float startedAt;
 
         Lang L { get { return app.Lang; } }
-        public bool Packing { get { return phase == Phase.Packing; } }
 
         public GoBagRoom(TanghalanApp app)
         {
@@ -76,11 +79,30 @@ namespace Tanghalan.Vr
             }
         }
 
-        /// <summary>The drill needs the tables to hide under.</summary>
-        public void ShowTablesForDrill()
+        // the room as it is between rounds: the three tables, with nothing left on them
+        void TidyRoom()
         {
-            if (hard) { opened.Clear(); ShowSets(false); foreach (var p in pieces) if (!p.Packed) p.Go.SetActive(false); }
+            opened.Clear();
+            ShowSets(false);
+            foreach (var p in pieces) if (!p.Packed) p.Go.SetActive(false);
         }
+
+        /// <summary>
+        /// The earthquake is coming. A round that is still going stops (the bag counts as it is), the cards
+        /// close, and the three tables stand ready to hide under.
+        /// </summary>
+        public void PrepareForDrill()
+        {
+            if (phase == Phase.Packing) Score(false);
+            TidyRoom();
+            if (menu != null) menu.Visible = false;
+            if (card != null) card.Visible = false;
+            if (bagPanel != null) bagPanel.Visible = false;
+            DrawBest();
+        }
+
+        /// <summary>Shows, or takes away, the note that the class is still packing.</summary>
+        public void ShowWaiting() { DrawBest(); }
 
         static string StationOf(int slot, bool hardSet)
         {
@@ -133,6 +155,9 @@ namespace Tanghalan.Vr
                 return;
             }
             menu.Text(Strings.Get("gobag.tip", L), 0, 0.12f, 1.1f, 0.16f, 0.32f, Palette.Navy, TextAlignmentOptions.Center);
+            // the earthquake drill comes after the first bag: a word, once, to a visitor who has not seen the rest yet
+            var v = app.Visit;
+            if (!lastSaid && !v.GoBagDone && !(v.WorksDone && v.CanalDone)) { lastSaid = true; app.Bayani.Say(Strings.Get("gobag.last", L)); }
             menu.Button(Strings.Get("gobag.easy", L), -0.28f, -0.1f, 0.52f, 0.16f, Palette.Green, () => StartRound(false));
             menu.Button(Strings.Get("gobag.hard", L), 0.28f, -0.1f, 0.52f, 0.16f, Palette.Teal, () => StartRound(true));
             menu.Button(Strings.Get("btn.close", L), 0, -0.3f, 0.5f, 0.11f, Palette.Grey, () => menu.Visible = false);
@@ -213,7 +238,11 @@ namespace Tanghalan.Vr
             ShowBag();
         }
 
-        void Finish()
+        void Finish() { Score(true); }
+
+        // Ends the round and counts the stars. zipped: the visitor zipped the bag (the result is shown, and the
+        // earthquake drill will follow); otherwise the earthquake came first, and the bag counts as it is.
+        void Score(bool zipped)
         {
             if (phase != Phase.Packing) return;
             var packed = new List<string>();
@@ -221,16 +250,18 @@ namespace Tanghalan.Vr
             var res = GoBagRules.ScoreRound(tray, packed);
             int stars = GoBagRules.RateStars(res);
             phase = Phase.Done;
-            Sfx.Play("zip");
-            if (stars >= 3) Sfx.Play("cheer");
-            foreach (var p in pieces) if (!p.Packed) p.Go.SetActive(false);
+            TidyRoom();
             app.Rig.SpeedFactor(1);
             bestStars = Mathf.Max(bestStars, stars);
             app.Visit.GoBagStars = bestStars;
             app.Visit.CarryingGoBag = true;
             app.Tour.Refresh();
             DrawBest();
-            app.Scenario.Report("gobag_result", stars + " stars, " + res.PackedGood + "/" + res.TotalGood + " useful, " + res.WrongPacks + " extra, " + Mathf.RoundToInt(Time.time - startedAt) + " s");
+            app.Scenario.Report("gobag_result", stars + " stars, " + res.PackedGood + "/" + res.TotalGood + " useful, " + res.WrongPacks + " extra, " + Mathf.RoundToInt(Time.time - startedAt) + " s" + (zipped ? "" : ", the earthquake came first"));
+            if (!zipped) return;
+            Sfx.Play("zip");
+            if (stars >= 3) Sfx.Play("cheer");
+            app.Drill.BagZipped(stars);
             // the result, on the menu card
             menu.Clear();
             menu.Visible = true;
@@ -255,6 +286,9 @@ namespace Tanghalan.Vr
             best.Box(0, 0.22f, 1.0f, 0.16f, Palette.Green);
             best.Text(Strings.Get("gobag.best", L), 0, 0.22f, 0.9f, 0.13f, 0.45f, Palette.White, TextAlignmentOptions.Center, true);
             for (int i = 0; i < 3; i++) best.Picture(i < bestStars ? "star_on" : "star_off", -0.2f + i * 0.2f, 0.0f, 0.17f, 0.17f);
+            // with a class: the bag is zipped, and the earthquake drill waits for the classmates still packing
+            var wait = app.Visit.DrillStart;
+            if (wait.WaitingForClass) best.Text(Strings.Format("gobag.waiting", L, wait.Ready, wait.Players), 0, -0.2f, 0.92f, 0.2f, 0.24f, Palette.Navy, TextAlignmentOptions.Center);
         }
 
         // ---------- the bag ----------

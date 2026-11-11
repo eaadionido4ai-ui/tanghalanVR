@@ -13,7 +13,6 @@ namespace Tanghalan.Vr
         readonly World world;
         Panel start, tasks, link, reader;
         TextMeshPro linkText;
-        Button drillButton;
         Work open;
         int page;
         float nextRefresh;
@@ -92,9 +91,12 @@ namespace Tanghalan.Vr
                 tasks.Picture(rows[i].Key ? "tick" : "star_off", -0.64f, y, 0.1f, 0.1f);
                 tasks.Text(rows[i].Value, 0.06f, y, 1.26f, 0.13f, 0.34f, rows[i].Key ? Palette.Green : Palette.Navy, TextAlignmentOptions.Left);
             }
-            drillButton = tasks.Button(Strings.Get("tasks.startdrill", L), 0, -0.4f, 1.0f, 0.16f, Palette.Red, () => app.Drill.Announce());
-            drillButton.Pointable.CanPress = () => app.Visit.ReadyForDrill && !app.Drill.Busy && !app.Visit.Over;
-            if (!v.ReadyForDrill) tasks.Text(Strings.Get("tasks.notyet", L), 0, -0.51f, 1.4f, 0.06f, 0.22f, Palette.Grey, TextAlignmentOptions.Center);
+            // the earthquake drill starts by itself after the go bag: the board says so until the bag is packed
+            if (!v.GoBagDone)
+            {
+                tasks.Box(0, -0.4f, 1.4f, 0.16f, Palette.Cream);
+                tasks.Text(Strings.Get("tasks.last", L), 0, -0.4f, 1.32f, 0.14f, 0.3f, Palette.Navy, TextAlignmentOptions.Center, true);
+            }
             if (open != null) ShowPage();
         }
 
@@ -106,7 +108,6 @@ namespace Tanghalan.Vr
                 : Time.timeSinceLevelLoad < 8 ? Strings.Get("start.gama.wait", L)
                 : Strings.Get("start.gama.off", L);
             if (s != lastLink) { lastLink = s; linkText.text = s; }
-            Ui.SetColor(drillButton.Background, drillButton.Pointable.Active ? Palette.Red : new Color(0.75f, 0.7f, 0.65f));
         }
 
         // ---------- a work ----------

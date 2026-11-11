@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Checks that the street, the flood, the earthquake and the neighbors use the same numbers in the three
-places that describe them: Unity (Tanghalan.Core), GAMA (GAMA/models/TANGHALAN.gaml) and the reference model
+"""Checks that the street, the flood, the earthquake, the start of the drill and the neighbors use the same
+numbers in the places that describe them: Unity (Tanghalan.Core), GAMA (GAMA/models) and the reference model
 (Tools/flood-reference/flood.py), and that the street model (Tools/web-export/src/street.js) agrees too.
 
     python3 Tools/check_constants.py
@@ -43,6 +43,7 @@ checks = [
     ('ramp down (s)', num(cs, r'RampDown = ' + N), num(gaml, r'ramp_down <- ' + N), None),
     ('aftershock after (s)', num(cs, r'AftershockAfter = ' + N), num(gaml, r'aftershock_after <- ' + N), None),
     ('aftershock peak', num(cs, r'AftershockPeak = ' + N), num(gaml, r'aftershock_peak <- ' + N), None),
+    ('go bag to drill (s)', num(cs, r'ReadSeconds = ' + N), num(vr, r'drill_delay <- ' + N), None),
     ('GAMA x offset', num(sim, r'OffsetX = ' + N + 'f'), num(gaml, r'offset_x <- ' + N), None),
     ('GAMA y offset', num(sim, r'OffsetY = ' + N + 'f'), num(gaml, r'offset_y <- ' + N), None),
 ]
