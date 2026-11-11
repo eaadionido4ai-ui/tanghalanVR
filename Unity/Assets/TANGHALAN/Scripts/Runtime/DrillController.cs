@@ -81,9 +81,18 @@ namespace Tanghalan.Vr
 
         // ---------- Cover ----------
 
+        // the table's own box: off while the visitor is under it, so nothing pushes them out
+        Collider TableBox(string id)
+        {
+            Collider c;
+            string solid = id.StartsWith("drill_gb_") ? "gb_" + id.Substring(9) : id;
+            return world.Solids.TryGetValue(solid, out c) ? c : null;
+        }
+
         void TakeCover(string id)
         {
             covered = true; coverId = id;
+            var box = TableBox(id); if (box != null) box.enabled = false;
             app.Rig.FadeOut();
             var under = world.Point(id);
             var outward = world.Facing(id);
@@ -114,6 +123,7 @@ namespace Tanghalan.Vr
             var under = world.Point(coverId);
             var outward = world.Facing(coverId);
             app.Rig.Place(under + outward * 1.0f, outward);
+            var box = TableBox(coverId); if (box != null) box.enabled = true;
             app.Rig.EyeHeight(null);
             app.Rig.SetDuck(false);
             app.Rig.CanMove(true);

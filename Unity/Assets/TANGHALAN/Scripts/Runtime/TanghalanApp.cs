@@ -40,6 +40,7 @@ namespace Tanghalan.Vr
         IEnumerator Start()
         {
             Visit = new Visit();
+            SetLighting();
             var root = new GameObject("TANGHALAN world").transform;
             World = new World(root);
             World.LoadPlace("museum");
@@ -69,6 +70,22 @@ namespace Tanghalan.Vr
             Rig.Place(World.Point("spawn"), World.Facing("spawn"));
             placedBySpawn = true;
             Tour.ShowStart();
+        }
+
+        /// <summary>Soft, even light from the sky and the floor, as the web app's hemisphere light, and a sun with no shadows.</summary>
+        static void SetLighting()
+        {
+            RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
+            RenderSettings.ambientSkyColor = new Color(1f, 0.98f, 0.94f) * 0.95f;
+            RenderSettings.ambientEquatorColor = new Color(0.86f, 0.82f, 0.75f) * 0.9f;
+            RenderSettings.ambientGroundColor = new Color(0.6f, 0.54f, 0.45f) * 0.9f;
+            foreach (var l in FindObjectsByType<Light>(FindObjectsSortMode.None))
+            {
+                if (l.type != LightType.Directional) continue;
+                l.shadows = LightShadows.None;
+                l.intensity = 0.45f;
+                l.transform.rotation = Quaternion.Euler(55, -30, 0);
+            }
         }
 
         /// <summary>Every floor of the museum and the street becomes a place to teleport to, like the template's Teleport Area.</summary>

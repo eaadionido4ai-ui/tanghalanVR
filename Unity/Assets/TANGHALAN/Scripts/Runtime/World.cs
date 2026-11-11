@@ -24,6 +24,8 @@ namespace Tanghalan.Vr
         /// <summary>The pictures and signs (T__), which rattle in an earthquake.</summary>
         public readonly List<Transform> Pictures = new List<Transform>();
         public readonly List<Collider> Floors = new List<Collider>();
+        /// <summary>The boxes you cannot walk through (COL__), by id.</summary>
+        public readonly Dictionary<string, Collider> Solids = new Dictionary<string, Collider>();
         readonly Dictionary<string, Material> pictureMats = new Dictionary<string, Material>();
         readonly Dictionary<string, GameObject> prefabs = new Dictionary<string, GameObject>();
 
@@ -97,6 +99,8 @@ namespace Tanghalan.Vr
         void Prepare(MeshRenderer mr)
         {
             var go = mr.gameObject;
+            mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; // flat, bright rooms as in the web app; cheaper on a headset
+            mr.receiveShadows = false;
             string[] parts = go.name.Split(new[] { "__" }, System.StringSplitOptions.None);
             string kind = parts[0];
             switch (kind)
@@ -114,6 +118,7 @@ namespace Tanghalan.Vr
                     var box = go.AddComponent<BoxCollider>();
                     string id = parts.Length > 1 ? parts[1] : go.name;
                     if (kind == "FLOOR") Floors.Add(box);
+                    if (kind == "COL") Solids[id] = box;
                     if (kind == "HOT") Hot[id] = box;
                     if (kind == "ZONE") Zones[id] = box;
                     string set = parts.Length > 2 && parts[2].StartsWith("SET_") ? parts[2].Substring(4) : null;
@@ -124,6 +129,8 @@ namespace Tanghalan.Vr
 
         void PrepareProp(MeshRenderer mr)
         {
+            mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            mr.receiveShadows = false;
             if (mr.name.StartsWith("M__") || mr.name.StartsWith("SW__")) mr.sharedMaterial = Palette;
             else if (mr.name.StartsWith("T__")) mr.sharedMaterial = PictureMaterial(mr.name.Split(new[] { "__" }, System.StringSplitOptions.None)[1]);
             else mr.enabled = false;

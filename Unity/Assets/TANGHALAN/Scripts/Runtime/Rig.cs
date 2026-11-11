@@ -161,7 +161,7 @@ namespace Tanghalan.Vr
             var delta = new Vector3(feet.x - head.x, 0, feet.z - head.z);
             Origin.transform.position += delta;
             var p = Origin.transform.position; p.y = feet.y; Origin.transform.position = p;
-            if (body != null) body.enabled = true;
+            if (body != null) body.enabled = canWalk;
         }
 
         /// <summary>Lowers (or raises back) the view, so the eyes are this high above the floor; null puts it back.</summary>
@@ -172,10 +172,11 @@ namespace Tanghalan.Vr
             offsetWant = metres.Value - headLocal;
         }
 
-        /// <summary>Walking on or off (the stick, teleporting, turning).</summary>
+        /// <summary>Walking on or off (the stick, teleporting, turning). Off, the body does not collide either, so it can sit under a table.</summary>
         public void CanMove(bool on)
         {
             if (locomotion != null) locomotion.SetActive(on);
+            if (body != null) body.enabled = on;
             canWalk = on;
         }
         bool canWalk = true;

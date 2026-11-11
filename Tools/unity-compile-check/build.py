@@ -8,7 +8,8 @@ then the project's own scripts (Assembly-CSharp: the SIMPLE template's scripts a
 the Unity 6000.3.8f1 engine's reference assemblies. It does not run anything: Unity is still needed to play.
 
 The editor's Data folder comes from a Unity 6000.3.8f1 install (Editor/Data), and the packages from the .tgz
-files in Editor/Data/Resources/PackageManager/Editor. See Tools/unity-compile-check/README.md.
+files in Editor/Data/Resources/PackageManager/Editor. Without a Unity install, both can be taken from the
+unityci/editor:ubuntu-6000.3.8f1-base-3.2.2 Docker image (its /opt/unity/Editor/Data).
 """
 import json, os, re, subprocess, sys, glob
 
