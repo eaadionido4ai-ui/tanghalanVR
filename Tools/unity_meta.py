@@ -257,6 +257,9 @@ ModelImporter:
 """ + TAIL
 
 PALETTE_MAT = 'TANGHALAN/Resources/TANGHALAN/Materials/TanghalanPalette.mat'
+# scripts that must wake up after others: the Game Manager after the template's Connection Manager (which it
+# asks for the player's id in Awake), and TANGHALAN VR's app after both
+EXEC_ORDER = {'TanghalanSimulationManager.cs': 100, 'TanghalanApp.cs': 200}
 
 
 def meta_for(path, rel):
@@ -266,7 +269,7 @@ def meta_for(path, rel):
     ext = os.path.splitext(path)[1].lower()
     name = os.path.splitext(os.path.basename(path))[0]
     if ext == '.cs':
-        return SCRIPT.format(guid=g)
+        return SCRIPT.format(guid=g).replace('executionOrder: 0', 'executionOrder: %d' % EXEC_ORDER.get(os.path.basename(path), 0))
     if ext in ('.json', '.txt', '.md', '.csv', '.gaml'):
         return TEXT.format(guid=g)
     if ext == '.asmdef':

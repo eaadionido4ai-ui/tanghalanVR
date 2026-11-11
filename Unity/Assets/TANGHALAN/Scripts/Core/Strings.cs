@@ -22,6 +22,17 @@ namespace Tanghalan
             { "start.howto", new[] { "Point at something and press the trigger. Push the stick forward to jump, or tilt it to walk.", "Ituro ang isang bagay at pindutin ang trigger. Itulak ang stick pasulong para tumalon, o ikiling para maglakad." } },
             { "start.howto.desktop", new[] { "No headset: walk with W A S D, look with the right mouse button, and click to choose.", "Walang headset: maglakad gamit ang W A S D, tumingin gamit ang kanang button ng mouse, at mag-click para pumili." } },
 
+            // ---- the rooms: what Bayani says when you walk in (the English is the web app's) ----
+            { "room.lobby", new[] { "Welcome to TANGHALAN! Walk through any door to explore. Point at a picture or a story stand and press the trigger.", "Maligayang pagdating sa TANGHALAN! Pumasok sa alinmang pinto. Ituro ang isang larawan o kuwento at pindutin ang trigger." } },
+            { "room.bulwagan", new[] { "This is the Bulwagan ng Bayanihan, the featured hall. Bayanihan means helping each other.", "Ito ang Bulwagan ng Bayanihan, ang tampok na bulwagan. Ang bayanihan ay pagtutulungan." } },
+            { "room.kuwentuhan", new[] { "Kuwentuhan Corner! Stories, poems and comics live here.", "Kuwentuhan Corner! Narito ang mga kuwento, tula at komiks." } },
+            { "room.mit", new[] { "Stop Hazards Early: ways to stop dangers before they happen. The door to the street is here.", "Stop Hazards Early: mga paraan para mapigilan ang panganib bago ito mangyari. Narito ang pinto papunta sa kalye." } },
+            { "room.prep", new[] { "Get Ready: how families prepare before a disaster.", "Get Ready: kung paano naghahanda ang pamilya bago ang sakuna." } },
+            { "room.resp", new[] { "Act Fast: what to do when a disaster strikes.", "Act Fast: ang gagawin kapag may sakuna." } },
+            { "room.rec", new[] { "Bounce Back: how we help each other recover.", "Bounce Back: kung paano tayo nagtutulungan para makabangon." } },
+            { "room.fireroom", new[] { "The Fire Safety Room. Fire Practice is coming soon to TANGHALAN VR.", "Ang Fire Safety Room. Malapit na ang Fire Practice sa TANGHALAN VR." } },
+            { "room.gobagroom", new[] { "Go Bag Room! Take an empty go bag from the packing table, then pack what your family needs.", "Go Bag Room! Kumuha ng walang lamang go bag sa mesang pang-empake, saka i-empake ang kailangan ng pamilya mo." } },
+
             // ---- the tasks board ----
             { "tasks.title", new[] { "Your visit", "Ang iyong pagbisita" } },
             { "tasks.works", new[] { "Look at {0} works of art and stories ({1} of {0})", "Tumingin ng {0} likha at kuwento ({1} sa {0})" } },
@@ -78,6 +89,8 @@ namespace Tanghalan
             { "gobag.leave", new[] { "Leave it", "Iwan" } },
             { "gobag.unpack", new[] { "Take it out", "Alisin sa bag" } },
             { "gobag.weight", new[] { "Weight {0} of {1}", "Bigat {0} sa {1}" } },
+            { "gobag.itemweight", new[] { "This weighs {0}. Your bag: {1} of {2}.", "Bigat nito: {0}. Ang bag mo: {1} sa {2}." } },
+            { "gobag.notzipped", new[] { "Your go bag is not zipped up yet. Come back to the Go Bag Room to finish packing.", "Hindi pa nakasara ang go bag mo. Bumalik sa Go Bag Room para tapusin ang pag-empake." } },
             { "gobag.found", new[] { "You found {0} in {1}. Point at one to look at it.", "May nakita kang {0} sa {1}. Ituro ang isa para tingnan." } },
             { "gobag.empty", new[] { "This one is empty. Keep searching.", "Walang laman ito. Maghanap pa." } },
             { "gobag.open", new[] { "Open {0}", "Buksan ang {0}" } },

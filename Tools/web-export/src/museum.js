@@ -21,6 +21,9 @@ export const GB_SPOTS = [
   { id: 'c4', x: 11.7, z: -18.95, w: 0.8, d: 0.5 },
 ];
 export const GB_COUNTER = { x: 9, z: -19.32, w: 1.8, d: 0.56 };
+// The sturdy tables for the earthquake drill: [room, x, z], each 1.3 by 0.8 m, in a clear spot of the room.
+export const DRILL_TABLES = [['lobby', -2.3, 6.9], ['bulwagan', -2.6, -2.6], ['kuwentuhan', -3.4, -19.0], ['mit', -8.0, -8.4],
+  ['prep', 8.0, -6.0], ['resp', -8.0, 2.0], ['rec', 7.2, 7.2], ['fireroom', -9.0, -16.0]];
 
 export async function buildMuseum(T) {
   if (!C.ROOMS.find((r) => r.id === 'kalye')) { C.ROOMS.push(KALYE); C.DOORS.push(STREET_DOOR); }
@@ -68,6 +71,24 @@ export async function buildMuseum(T) {
 
   // ---- the Go Bag Room's furniture ----
   const gb = buildGoBagRoom(T, W, scene, extra);
+
+  // ---- a sturdy table in each hall, to duck under in the earthquake drill ----
+  DRILL_TABLES.forEach(([id, x, z]) => {
+    const g = new T.Group(); g.position.set(x, 0, z); g.userData.group = 'drill'; scene.add(g);
+    W.box(1.3, 0.06, 0.8, 0x8a5a33, 0, 0.75, 0, g);
+    W.box(1.18, 0.1, 0.68, 0x6e4826, 0, 0.67, 0, g);
+    [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([a, b]) => W.box(0.09, 0.72, 0.09, 0x5a3a1a, a * 0.58, 0.36, b * 0.33, g));
+    extra.push(markerBox('COL', 'drill_' + id, x - 0.65, x + 0.65, 0, 0.78, z - 0.4, z + 0.4));
+    extra.push(markerBox('HOT', 'drill_' + id, x - 0.7, x + 0.7, 0, 0.84, z - 0.45, z + 0.45));
+    const r = C.ROOMS.find((q) => q.id === id);
+    const cx = (r.x0 + r.x1) / 2 - x, cz = (r.z0 + r.z1) / 2 - z;
+    extra.push(...anchor('drill_' + id, x, 0, z, cx, 0, cz)); // faces the middle of the room, the way out from under it
+  });
+  // in the Go Bag Room, the three tables of the Easy round are the sturdy tables
+  GB_SPOTS.slice(0, 3).forEach((s) => {
+    extra.push(markerBox('HOT', 'drill_gb_' + s.id, s.x - s.w / 2 - 0.05, s.x + s.w / 2 + 0.05, 0, 0.84, s.z - s.d / 2 - 0.05, s.z + s.d / 2 + 0.05, 'gb_tables'));
+    extra.push(...anchor('drill_gb_' + s.id, s.x, 0, s.z, 9 - s.x, 0, -15.5 - s.z));
+  });
 
   // ---- flatten: every piece in world space, named for the pipeline ----
   const textures = new Map(); // name -> canvas or image

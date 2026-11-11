@@ -122,8 +122,15 @@ export function buildStreet(T, W, facadeColor) {
   house(-12.6, 0xf3e3c3, 0xb5533c, 0xd9c7a0);
   house(-6.6, 0xcfe6ef, 0x2a6b8f, 0xa9cbd8);   // Rico's house, with the water gauge by the door
   house(-0.6, 0xf6d98a, 0x7a5c3a, 0xd9bb6a);
-  B(-23.06, -23, P.wside, P.wside + 0.62, ZN, -7.3, 0xf4efe4); B(-23.06, -23, P.wside, P.wside + 0.62, -5.9, 3, 0xf4efe4); // the fence, open at Rico's gate
-  COL('fence', -23.08, -22.98, P.wside, P.wside + 1.2, ZN, 3);
+  // the fence along the yards, with a gate in front of each house's door
+  const gates = [-12.6, -6.6, -0.6].map((zc) => [zc - 0.7, zc + 0.7]);
+  let fz = ZN;
+  gates.concat([[3, 3]]).forEach(([ga, gb], n) => {
+    B(-23.06, -23, P.wside, P.wside + 0.62, fz, ga, 0xf4efe4);
+    COL('fence_' + n, -23.08, -22.98, P.wside, P.wside + 1.2, fz, ga);
+    if (gb < 3) { B(-23.12, -22.94, P.wside, P.wside + 0.8, ga - 0.06, ga, 0x2a6b8f); B(-23.12, -22.94, P.wside, P.wside + 0.8, gb, gb + 0.06, 0x2a6b8f); }
+    fz = gb;
+  });
   // the water gauge: a child drawn on a board, with marks at the ankle, the knee and the waist
   const gauge = W.canvas(512, 1024, (c, w, h) => {
     c.fillStyle = '#ffffff'; c.fillRect(0, 0, w, h);

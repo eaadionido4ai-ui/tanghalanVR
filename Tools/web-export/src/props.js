@@ -15,6 +15,11 @@ export const WASTE_MODELS = [
   ['sachet', 'res', '🍬'], ['styro', 'res', '🥡'], ['plasticbag', 'res', '🛍️'], ['slipper', 'res', '🩴'],
 ];
 
+// The neighbors: shirt (also the model's name), hair, pants, skin. The shirts are Tanghalan.Crowd's.
+export const PEOPLE = [['c8782a', 0x2b1d16, 0x35506b, 0xc68a55], ['e2588a', 0x3a2418, 0x4a3b6b, 0xd69a63], ['2f74d0', 0x1d1410, 0x3d3127, 0xb87a48],
+  ['4caf50', 0x2b1d16, 0x35506b, 0xe0aa78], ['7a53c6', 0x4a2f20, 0x2f3f4f, 0xc68a55], ['f2b300', 0x1d1410, 0x35506b, 0xd69a63],
+  ['2fa37a', 0x2b1d16, 0x5a3a1a, 0xb87a48], ['e2382b', 0x3a2418, 0x35506b, 0xe0aa78]];
+
 export function makeWaste(T, id) {
   const g = new T.Group();
   const M = (c) => new T.MeshLambertMaterial({ color: c });
@@ -111,6 +116,13 @@ export function buildProps(T) {
   ITEMS.forEach((it) => one('item_' + it.id, makeItem(T, it.id)));
   WASTE_MODELS.forEach(([id]) => one('waste_' + id, makeWaste(T, id)));
   one('gobag', makeGoBag(T));
+  // the neighbors who walk to the evacuation center (Tanghalan.Crowd): one model for each shirt
+  PEOPLE.forEach(([shirt, hair, pants, skin]) => {
+    const k = makeKid(T, { shirt: parseInt(shirt, 16), hair, pants, skin, face: true });
+    k.pose(0, 0, 0, 0.016);
+    const turn = new T.Group(); turn.rotation.y = Math.PI; turn.add(k.group);
+    one('person_' + shirt, turn, (o) => o.material.transparent && o.material.opacity < 0.5);
+  });
   // Bayani, waving, turned to face -z so that in Unity he faces forward
   const b = makeKid(T, { shirt: 0x1f6f8b, hat: true, face: true, cape: true, star: true, wave: true, skin: 0xe8ab70 });
   b.pose(0, 0, 0.26, 0.016);
