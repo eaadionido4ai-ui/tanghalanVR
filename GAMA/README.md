@@ -47,5 +47,10 @@ If GAMA does not answer within 3 seconds of being asked, the app runs the same m
 
 - The model has not been run in GAMA yet. It was checked by hand against the SIMPLE plugin's source. Open
   `models/TANGHALAN VR.gaml` in GAMA 2025.06 with the SIMPLE plugin and report what does not compile.
-- There is one storm and one earthquake for all the headsets: when one headset starts the earthquake, every
-  headset shakes.
+- There is one storm, one earthquake and one group of neighbors for all the headsets. A headset ignores them
+  until it starts its own storm or drill. But when a second headset starts the earthquake, every headset that
+  has already started or finished its drill feels the shaking again, even at the evacuation center, and the
+  neighbors start their walk over. In the same way, a second headset's storm restarts the storm of a headset
+  whose storm is still running, with the second visitor's canal.
+- The visitors do not see each other. The SIMPLE plugin can show the other players (`player_unity_properties`),
+  but TANGHALAN VR does not use it yet.
