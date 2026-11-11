@@ -73,6 +73,8 @@ let m = head('The rooms and the works of the museum.') + 'namespace Tanghalan\n{
 m += `        public const string FullName = ${s(data.fullName)};\n        public const string SampleNote = ${s(data.sampleNote)};\n        public const double Ceiling = ${n(data.ceil)};\n        public const double SpawnX = ${n(data.spawn.x)}, SpawnZ = ${n(data.spawn.z)};\n\n`;
 m += '        public static readonly Room[] Rooms =\n        {\n';
 for (const r of data.rooms) m += `            new Room(${s(r.id)}, ${s(r.name)}, ${s(r.sub)}, ${n(r.x0)}, ${n(r.x1)}, ${n(r.z0)}, ${n(r.z1)}, ${s(r.pillar)}, ${s(r.game)}),\n`;
+m += '        };\n\n        public static readonly Door[] Doors =\n        {\n';
+for (const d of data.doors) m += `            new Door(${s(d.a)}, ${s(d.b)}, '${d.axis}', ${n(d.at)}, ${n(d.from)}, ${n(d.to)}),\n`;
 m += '        };\n\n        public static readonly Work[] Works =\n        {\n';
 for (const w of data.works) {
   if (!NOTES_FIL[w.id]) throw new Error('no Filipino note for ' + w.id);

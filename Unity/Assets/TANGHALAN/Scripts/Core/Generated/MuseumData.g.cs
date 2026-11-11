@@ -25,6 +25,23 @@ namespace Tanghalan
             new Room("gobagroom", "Go Bag Room", "Game room · Pack a go bag", 5, 13, -20, -12, "", "gobag"),
         };
 
+        public static readonly Door[] Doors =
+        {
+            new Door("lobby", "bulwagan", 'x', 0, -1.3, 1.3),
+            new Door("bulwagan", "kuwentuhan", 'x', -12, -1.3, 1.3),
+            new Door("bulwagan", "mit", 'z', -5, -7.3, -4.7),
+            new Door("bulwagan", "prep", 'z', 5, -7.3, -4.7),
+            new Door("mit", "resp", 'x', 0, -10.3, -7.7),
+            new Door("prep", "rec", 'x', 0, 7.7, 10.3),
+            new Door("lobby", "resp", 'z', -5, 3.2, 5.8),
+            new Door("lobby", "rec", 'z', 5, 3.2, 5.8),
+            new Door("kuwentuhan", "fireroom", 'z', -5, -14.9, -12.3),
+            new Door("kuwentuhan", "gobagroom", 'z', 5, -14.9, -12.3),
+            new Door("mit", "fireroom", 'x', -12, -12.6, -10),
+            new Door("prep", "gobagroom", 'x', -12, 10, 12.6),
+            new Door("mit", "kalye", 'z', -13, -4, -1.4),
+        };
+
         public static readonly Work[] Works =
         {
             new Work

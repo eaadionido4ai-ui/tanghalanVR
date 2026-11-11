@@ -22,6 +22,26 @@ namespace Tanghalan
         public bool Contains(double x, double z) { return x >= X0 && x <= X1 && z >= Z0 && z <= Z1; }
     }
 
+    /// <summary>
+    /// A doorway between two rooms. Axis 'x': in a wall that runs along x, at z = At, from x = From to To.
+    /// Axis 'z': in a wall that runs along z, at x = At, from z = From to To.
+    /// </summary>
+    public sealed class Door
+    {
+        public readonly string A, B;
+        public readonly char Axis;
+        public readonly double At, From, To;
+
+        public Door(string a, string b, char axis, double at, double from, double to)
+        {
+            A = a; B = b; Axis = axis; At = at; From = from; To = to;
+        }
+
+        public double MidX { get { return Axis == 'x' ? (From + To) / 2 : At; } }
+        public double MidZ { get { return Axis == 'x' ? At : (From + To) / 2; } }
+        public string Other(string room) { return room == A ? B : room == B ? A : null; }
+    }
+
     public sealed class Work
     {
         public string Id, Room, Title, By, Grade, Place, Medium, Pillar, Game;

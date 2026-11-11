@@ -58,7 +58,7 @@ async function run() {
     source: 'TANGHALAN web app, src/museum/content.js and src/rooms/logic.js',
     fullName: C.FULL_NAME, sampleNote: C.SAMPLE_NOTE, ceil: C.CEIL, spawn: C.SPAWN,
     rooms: museum.layout.rooms, kalye: { id: KALYE.id, name: KALYE.name, sub: KALYE.sub, hint: KALYE.hint },
-    kinds: C.KINDS, games: C.GAMES, libraryGames: C.LIBRARY_GAMES,
+    kinds: C.KINDS, games: C.GAMES, libraryGames: C.LIBRARY_GAMES, doors: C.DOORS,
     works: C.WORKS.map((w) => Object.assign({}, w, museum.layout.works.find((x) => x.id === w.id))),
     gobag: { items: L.ITEMS, capacity: L.CAPACITY, slots: museum.layout.gobag },
     fire: { drop: L.fire.DROP, agentUse: L.fire.AGENT_USE },
