@@ -270,44 +270,41 @@ global {
 
 	action create_neighbors {
 		list<float> houses <- [-12.6, -6.6, -0.6];
-		list<point> spots <- [{-25.9, 0.0, 5.2}, {-25.1, 0.0, 5.4}, {-26.0, 0.0, 6.3}, {-25.2, 0.0, 6.5},
-			{-24.3, 0.0, 6.0}, {-24.4, 0.0, 7.1}, {-23.4, 0.0, 6.6}, {-25.5, 0.0, 7.4}];
+		// where each one is outside before the drill: sweeping, on a doorstep, talking, playing (Unity: Crowd.Homes, StreetLife)
+		list<point> homes <- [{-22.4, -0.45, -12.6}, {-23.18, -0.3, -12.25}, {-22.5, -0.45, -7.25}, {-22.05, -0.45, -4.55},
+			{-22.45, -0.45, -6.25}, {-22.05, -0.45, -2.75}, {-21.7, -0.45, -15.3}, {-22.3, -0.45, -14.7}];
+		// where they stand at the court: its west side, clear of the board (Unity: Crowd.Spots)
+		list<point> spots <- [{-26.3, 0.0, 4.2}, {-25.5, 0.0, 4.4}, {-26.4, 0.0, 5.1}, {-25.6, 0.0, 5.3},
+			{-26.3, 0.0, 6.0}, {-25.5, 0.0, 6.2}, {-26.3, 0.0, 6.9}, {-25.5, 0.0, 7.1}];
 		// the shirts' colors, as in Unity (Tanghalan.Crowd)
 		list<string> shirts <- ["c8782a", "e2588a", "2f74d0", "4caf50", "7a53c6", "f2b300", "2fa37a", "e2382b"];
 		list<rgb> colors <- [rgb(200, 120, 42), rgb(226, 88, 138), rgb(47, 116, 208), rgb(76, 175, 80), rgb(122, 83, 198), rgb(242, 179, 0), rgb(47, 163, 122), rgb(226, 56, 43)];
-		int k <- 0;
-		loop h from: 0 to: 2 {
-			float z <- houses[h];
-			loop m from: 0 to: 1 {
-				float side <- m = 0 ? -0.25 : 0.25;
-				create evacuee {
-					name <- "evacuee" + k;
-					adult <- m = 0;
-					shirt <- shirts[k];
-					color <- colors[k];
-					delay <- 1.0 + h * 2.5 + m * 0.8;
-					speed_ms <- m = 0 ? 1.05 : 1.15;
-					// web coordinates: {x, height, z}
-					route <- [{-23.6, -0.4, z + side}, {-22.8, -0.42, z + side}, {-22.3 + side, -0.45, z + 0.6},
-						{-22.3 + side, -0.45, 2.1}, {-22.3 + side, -0.15, 2.85}, {-22.8, 0.0, 3.6}, spots[k]];
-					do reset;
-				}
-				k <- k + 1;
-			}
-		}
-		loop m from: 0 to: 1 {
-			float side <- m = 0 ? -0.3 : 0.3;
+		// a grown-up and a child from each house, and two children from the north end of the street
+		loop k from: 0 to: 7 {
+			bool north <- k >= 6;
+			int h <- int(k / 2);
+			int m <- k mod 2;
+			// the lane along the sidewalk: the grown-ups nearer the fence, the children nearer the canal
+			float lane <- north ? (-22.0 + (k = 6 ? 0.3 : -0.3)) : (-22.3 + (m = 0 ? -0.25 : 0.25));
+			point home <- homes[k];
+			// web coordinates: {x, height, z}
+			list<point> r <- [home];
+			if (home.x < -23.0) { r << {-22.7, -0.45, home.z}; } // out through the gate
+			r << {lane, -0.45, home.z};
+			r << {lane, -0.45, 2.1};
+			r << {lane, -0.15, 2.85};
+			r << {north ? -22.6 : -22.8, 0.0, 3.6};
+			r << spots[k];
 			create evacuee {
 				name <- "evacuee" + k;
-				adult <- false;
+				adult <- !north and m = 0;
 				shirt <- shirts[k];
 				color <- colors[k];
-				delay <- 3.0 + m * 0.6;
-				speed_ms <- 1.2;
-				route <- [{-22.0 + side, -0.45, -16.3}, {-22.0 + side, -0.45, 2.1}, {-22.0 + side, -0.15, 2.85}, {-22.6, 0.0, 3.6}, spots[k]];
+				delay <- north ? 3.0 + (k - 6) * 0.6 : 1.0 + h * 2.5 + m * 0.8;
+				speed_ms <- north ? 1.2 : (m = 0 ? 1.05 : 1.15);
+				route <- r;
 				do reset;
 			}
-			k <- k + 1;
 		}
 	}
 }
@@ -332,7 +329,8 @@ species evacuee {
 		location <- {web.x + offset_x, web.z + offset_y};
 	}
 
-	reflex walk when: started and !arrived {
+	// in the aftershock they stop and duck until it passes (Unity: Crowd.Step)
+	reflex walk when: started and !arrived and !(after_running and intensity > 0.05) {
 		t <- t + real_dt;
 		if (t >= delay) {
 			float go <- speed_ms * real_dt;

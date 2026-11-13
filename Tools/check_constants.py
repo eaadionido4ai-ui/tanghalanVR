@@ -61,6 +61,18 @@ houses_cs = re.findall(r'Houses = \{ ([^}]*) \}', cs)[0].replace(' ', '')
 houses_gaml = re.findall(r'houses <- \[([^\]]*)\]', gaml)[0].replace(' ', '')
 print('%-22s %s' % ('houses', 'ok' if houses_cs == houses_gaml else 'DIFFERENT'))
 bad += 0 if houses_cs == houses_gaml else 1
+# the neighbors' places outside and at the court
+evac = read('Unity', 'Assets', 'TANGHALAN', 'Scripts', 'Core', 'Evacuation.cs')
+def p3s(block):
+    return [tuple(round(float(v), 3) for v in m) for m in re.findall(r'new P3\((-?[0-9.]+), (-?[0-9.]+), (-?[0-9.]+)\)', block)]
+def points(block):
+    return [tuple(round(float(v), 3) for v in m) for m in re.findall(r'\{(-?[0-9.]+), (-?[0-9.]+), (-?[0-9.]+)\}', block)]
+for name, cs_name, gaml_name in [('neighbors outside', 'Homes', 'homes'), ('neighbors at the court', 'Spots', 'spots')]:
+    a = p3s(re.findall(r'P3\[\] ' + cs_name + r' =\s*\{(.*?)\};', evac, re.S)[0])
+    b = points(re.findall(r'list<point> ' + gaml_name + r' <- \[(.*?)\];', gaml, re.S)[0])
+    same = len(a) == 8 and a == b
+    print('%-22s %s' % (name, 'ok' if same else 'DIFFERENT: %s / %s' % (a, b)))
+    bad += 0 if same else 1
 spawn = re.findall(r'init_locations <- \[\{([0-9.]+), ([0-9.]+)', vr)[0]
 ok = abs(float(spawn[0]) - 30.0) < 1e-9 and abs(float(spawn[1]) - (4.8 + 25)) < 1e-9
 print('%-22s %s' % ('player start', 'ok' if ok else 'DIFFERENT'))

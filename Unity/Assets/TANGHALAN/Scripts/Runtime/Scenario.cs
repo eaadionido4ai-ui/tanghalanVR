@@ -140,7 +140,7 @@ namespace Tanghalan.Vr
             if (Crowd.Started)
             {
                 if (CrowdFromGama && now - lastPeople > GamaPatience) { CrowdFromGama = false; crowdOwn = true; Debug.Log("TANGHALAN: GAMA did not send the neighbors; moving them here."); }
-                if (!CrowdFromGama) Crowd.Step(dt);
+                if (!CrowdFromGama) Crowd.Step(dt, Intensity);
             }
         }
 

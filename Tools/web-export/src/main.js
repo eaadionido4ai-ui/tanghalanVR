@@ -50,6 +50,29 @@ async function run() {
   for (const name of Object.keys(props)) await save('glb/' + name + '.glb', await toGLB(props[name].meshes.concat(props[name].extra)));
   log('models saved');
 
+  // the museum's plan, for the people who walk in it (Tanghalan.Core, MuseumPlan): the boxes nobody walks
+  // through (walls and furniture), the boxes the visitor points at (the works, the tables), and the sturdy
+  // tables, with the way out from under each
+  const r3 = (v) => Math.round(v * 1000) / 1000;
+  const boxOf = (o) => {
+    const q = o.geometry.parameters;
+    return { x0: r3(o.position.x - q.width / 2), x1: r3(o.position.x + q.width / 2), y0: r3(o.position.y - q.height / 2), y1: r3(o.position.y + q.height / 2), z0: r3(o.position.z - q.depth / 2), z1: r3(o.position.z + q.depth / 2) };
+  };
+  const plan = { solids: [], hot: [], tables: [] };
+  const anchors = new Map();
+  museum.extra.forEach((o) => {
+    const t = o.name.split('__');
+    if (t[0] === 'A') anchors.set(o.name.slice(3), o.position);
+    if (t[0] === 'COL') plan.solids.push(Object.assign({ id: t[1], set: t[2] ? t[2].slice(4) : '' }, boxOf(o)));
+    if (t[0] === 'HOT') plan.hot.push(Object.assign({ id: t[1], set: t[2] ? t[2].slice(4) : '' }, boxOf(o)));
+  });
+  for (const [id, p] of anchors) {
+    if (!id.startsWith('drill_') || id.endsWith('__N')) continue;
+    const n = anchors.get(id + '__N');
+    plan.tables.push({ id, x: r3(p.x), z: r3(p.z), nx: r3(n.x - p.x), nz: r3(n.z - p.z) });
+  }
+  log('  plan: ' + plan.solids.length + ' solid boxes, ' + plan.hot.length + ' boxes to point at, ' + plan.tables.length + ' sturdy tables');
+
   const textures = new Map([...museum.textures, ...street.textures, ...icons]);
   for (const [name, img] of textures) await save('textures/' + name + '.png', await toPNG(img));
   log(textures.size + ' textures saved');
@@ -63,6 +86,7 @@ async function run() {
     gobag: { items: L.ITEMS, capacity: L.CAPACITY, slots: museum.layout.gobag },
     fire: { drop: L.fire.DROP, agentUse: L.fire.AGENT_USE },
     street: { plan: PLAN, wasteClusters: WASTE_CLUSTERS, wasteModels: WASTE_MODELS },
+    plan,
     textures: [...textures.keys()].sort(),
     models: ['museum', 'street'].concat(Object.keys(props)),
   };

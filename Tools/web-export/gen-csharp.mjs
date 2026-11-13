@@ -1,6 +1,8 @@
 // Writes the C# data files of TANGHALAN VR from what the web app exported (out/data/content.json):
 //   Unity/Assets/TANGHALAN/Scripts/Core/Generated/MuseumData.g.cs   the rooms and the works, with their texts
 //   Unity/Assets/TANGHALAN/Scripts/Core/Generated/GoBagItems.g.cs   the 24 go bag items
+//   Unity/Assets/TANGHALAN/Scripts/Core/Generated/MuseumPlan.g.cs   the walls, the furniture and the sturdy
+//                                                                   tables, for the people who walk in it
 // Run after export.mjs (Tools/build_assets.sh does both).
 //
 // The web app has the works' texts in Filipino and English, and everything else in English. The Filipino
@@ -97,4 +99,15 @@ for (const it of data.gobag.items) {
 g += '        };\n    }\n}\n';
 if (data.gobag.capacity !== 14) throw new Error('the bag capacity changed in the web app: update GoBagRules.Capacity');
 await writeFile(path.join(outDir, 'GoBagItems.g.cs'), g);
-console.log('C# data written: ' + data.rooms.length + ' rooms, ' + data.works.length + ' works, ' + data.gobag.items.length + ' items');
+
+// the plan: boxes are x0, x1, y0, y1, z0, z1 in the web app's coordinates; set is the switchable set a box
+// belongs to ("" for none)
+const box = (b) => `new PlanBox(${s(b.id)}, ${s(b.set)}, ${[b.x0, b.x1, b.y0, b.y1, b.z0, b.z1].map(n).join(', ')})`;
+const list = (type, name, rows) => `        public static readonly ${type}[] ${name} =\n        {\n` + rows.map((r) => '            ' + r + ',\n').join('') + '        };\n';
+let pl = head("The museum's plan: the boxes nobody walks through, the boxes the visitor points at, and the sturdy tables.") + 'namespace Tanghalan\n{\n    public static partial class MuseumPlan\n    {\n';
+pl += list('PlanBox', 'Solids', data.plan.solids.filter((b) => b.id !== 'ceiling').map(box)) + '\n';
+pl += list('PlanBox', 'Hot', data.plan.hot.map(box)) + '\n';
+pl += list('PlanTable', 'Tables', data.plan.tables.map((t) => `new PlanTable(${s(t.id)}, ${n(t.x)}, ${n(t.z)}, ${n(t.nx)}, ${n(t.nz)})`));
+pl += '    }\n}\n';
+await writeFile(path.join(outDir, 'MuseumPlan.g.cs'), pl);
+console.log('C# data written: ' + data.rooms.length + ' rooms, ' + data.works.length + ' works, ' + data.gobag.items.length + ' items, ' + data.plan.solids.length + ' solid boxes, ' + data.plan.tables.length + ' tables');

@@ -16,6 +16,11 @@ The numbers (the street's grid, the flood, the shaking, the neighbors) are the s
 Places use TANGHALAN's web coordinates (metres; x east, z south). GAMA draws them at (x + 30, z + 25), and
 Unity puts them at (x, y, -z).
 
+The eight neighbors (`evacuee`) start from where they are outside before the drill, in front of their houses
+(in Unity they sweep, talk and play there: `StreetLife`). When the visitor walks out after the shaking, they walk
+along the west sidewalk to the court's west side, clear of the summary board. In the aftershock they stop and
+duck until it passes.
+
 ## The earthquake drill for a class
 
 The earthquake comes after the go bag. With several headsets, GAMA makes the class drill together:

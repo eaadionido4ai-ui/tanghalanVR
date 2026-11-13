@@ -8,8 +8,8 @@
 //    controllers rumble, a deep sound fills the room; the visitor's view itself never shakes, for comfort.
 // 3. Duck (crouch for real, or press A), Cover (point at the nearest sturdy table and press the trigger: the
 //    visitor is moved under it), Hold (squeeze a grip button) until the shaking stops, then wait a moment.
-// 4. Walk out: arrows on the floor show the way, Bayani walks ahead, and the neighbors leave their houses for
-//    the evacuation center too. An aftershock comes on the way: stop and duck.
+// 4. Walk out: arrows on the floor show the way, Bayani walks ahead, and the neighbors on the street and the
+//    other visitors walk to the evacuation center too (Crowds). An aftershock comes on the way: stop and duck.
 // 5. At the covered court: the head count, and the summary of the whole visit.
 // DrillJudge (Tanghalan.Core) follows what the visitor does and gives the stars.
 using System.Collections.Generic;
@@ -27,11 +27,9 @@ namespace Tanghalan.Vr
         readonly DrillStart start;
         readonly Dictionary<Transform, Vector3> rattleHome = new Dictionary<Transform, Vector3>();
         readonly List<GameObject> arrows = new List<GameObject>();
-        readonly List<Transform> neighbors = new List<Transform>();
-        Transform neighborsRoot;
         Panel comeOut, summary;
         string coverId;
-        bool covered, crowdShown, reported, shakingStarted, saidGoInside, wasWaiting;
+        bool covered, reported, shakingStarted, saidGoInside, wasWaiting;
         DrillHint lastHint = DrillHint.None;
         int zipStars, lastReady = -1, lastPlayers = -1;
         float nextHaptic, nextTell;
@@ -218,7 +216,6 @@ namespace Tanghalan.Vr
                 app.Hud.Show(line, judge.Phase == DrillPhase.Arrived ? 6 : 0);
                 if (judge.Hint != DrillHint.GoodStay) app.Bayani.Say(line);
             }
-            if (crowdShown) MoveNeighbors();
             if (judge.Phase == DrillPhase.Arrived && summary != null && summary.Visible) UpdateHeadcount();
         }
 
@@ -260,7 +257,6 @@ namespace Tanghalan.Vr
             app.Bayani.Crouch(false);
             if (!covered) app.Rig.SetDuck(false);
             app.Scenario.StartEvacuation();
-            ShowNeighbors();
             var feet = app.Rig.Feet;
             // from the doorway side of the table, if the visitor is still under it
             if (covered) feet = world.Point(coverId) + world.Facing(coverId) * 1.0f;
@@ -318,36 +314,6 @@ namespace Tanghalan.Vr
             return m;
         }
 
-        void ShowNeighbors()
-        {
-            if (crowdShown) return;
-            crowdShown = true;
-            neighborsRoot = new GameObject("Neighbors").transform;
-            foreach (var e in app.Scenario.Crowd.People)
-            {
-                var go = world.Spawn("person_" + e.Shirt, neighborsRoot);
-                if (go == null) { neighbors.Add(null); continue; }
-                go.transform.localScale = Vector3.one * (e.Adult ? 1.3f : 1.0f);
-                neighbors.Add(go.transform);
-            }
-            MoveNeighbors();
-        }
-
-        void MoveNeighbors()
-        {
-            var people = app.Scenario.Crowd.People;
-            for (int i = 0; i < people.Count && i < neighbors.Count; i++)
-            {
-                var t = neighbors[i];
-                if (t == null) continue;
-                var e = people[i];
-                var p = WebSpace.ToUnity(e.Position);
-                if (e.Walking) p.y += Mathf.Abs(Mathf.Sin(Time.time * 7 + i)) * 0.03f;
-                t.position = p;
-                t.rotation = Quaternion.Slerp(t.rotation, WebSpace.Heading(e.Heading), Time.deltaTime * 6);
-            }
-        }
-
         // ---------- at the evacuation center ----------
 
         void Arrive()
@@ -389,12 +355,14 @@ namespace Tanghalan.Vr
         TextMeshPro countText;
         int lastArrived = -1;
 
+        // Bayani counts the neighbors and the other visitors as they come
         void UpdateHeadcount()
         {
-            int n = app.Scenario.Crowd.ArrivedCount, all = app.Scenario.Crowd.People.Count;
+            var c = app.Crowds;
+            int n = c.ArrivedCount, all = c.Count;
             if (n == lastArrived || countText == null) return;
             lastArrived = n;
-            countText.text = n >= all ? Strings.Format("drill.headcount", L, all) : Strings.Format("drill.waiting", L, all - n);
+            countText.text = n >= all ? Strings.Format("drill.headcount", L, c.Street.People.Count, c.Visitors.People.Count) : Strings.Format("drill.waiting", L, all - n);
             if (n >= all) app.Bayani.Say(countText.text);
         }
 

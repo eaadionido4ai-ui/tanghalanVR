@@ -20,6 +20,9 @@ namespace Tanghalan.Vr
 
         Lang L { get { return app.Lang; } }
 
+        /// <summary>The work the visitor is reading now, or null (the other visitors make room).</summary>
+        public string Reading { get { return open != null ? open.Id : null; } }
+
         public Tour(TanghalanApp app)
         {
             this.app = app; world = app.World;

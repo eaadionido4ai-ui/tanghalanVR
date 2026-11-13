@@ -10,6 +10,7 @@
 //   ZONE__<id>                  an invisible box things can be dropped into (also selectable)
 //   A__<id>                     an anchor: a point; A__<id>__N is one metre from it, in the direction it faces
 //   CAL__O, CAL__X, CAL__Y, CAL__Z   the origin and the three axes, so Unity can tell how the file was turned
+//   P__<joint>                  in a person (people.js): a hip, knee or shoulder the parts turn about, a hand, the top
 //
 // A last token SET_<set> ties a box to a switchable set, so it goes on and off with it.
 

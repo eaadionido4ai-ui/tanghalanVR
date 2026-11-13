@@ -127,8 +127,8 @@ namespace Tanghalan
             { "drill.AftershockGood", new[] { "Good! Wait until it stops, then keep walking.", "Mahusay! Hintaying tumigil, saka magpatuloy sa paglakad." } },
             { "drill.Arrived", new[] { "You made it to the evacuation center! Let us check that everyone is here.", "Nakarating ka sa evacuation center! Tingnan natin kung narito ang lahat." } },
             { "drill.duckbtn", new[] { "Press A to duck", "Pindutin ang A para yumuko" } },
-            { "drill.headcount", new[] { "Everyone is here: {0} neighbors, Bayani, and you.", "Narito ang lahat: {0} kapitbahay, si Bayani, at ikaw." } },
-            { "drill.waiting", new[] { "Waiting for {0} more neighbors...", "Hinihintay pa ang {0} kapitbahay..." } },
+            { "drill.headcount", new[] { "Everyone is here: {0} neighbors, {1} visitors from the museum, Bayani, and you.", "Narito ang lahat: {0} kapitbahay, {1} bisita ng museo, si Bayani, at ikaw." } },
+            { "drill.waiting", new[] { "Waiting for {0} more people...", "Hinihintay pa ang {0} katao..." } },
             { "drill.intensity", new[] { "Shaking: {0}", "Yanig: {0}" } },
 
             // ---- the summary at the evacuation center ----

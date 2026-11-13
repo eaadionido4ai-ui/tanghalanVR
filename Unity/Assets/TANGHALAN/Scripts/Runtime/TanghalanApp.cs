@@ -7,6 +7,7 @@
 //   Street          the canal clean-up and the replay of the storm (Stop Hazards Early)
 //   GoBagRoom       the go bag game (Get Ready)
 //   DrillController the earthquake drill, which comes after the go bag, and the walk to the evacuation center
+//   Crowds          the other people: the class visiting the museum with their teacher, the neighbors on the street
 // Scenario says what GAMA (or, without GAMA, Tanghalan.Core) is doing: the storm, the shaking, the neighbors.
 using System.Collections;
 using TMPro;
@@ -29,6 +30,7 @@ namespace Tanghalan.Vr
         public Street Street { get; private set; }
         public GoBagRoom GoBag { get; private set; }
         public DrillController Drill { get; private set; }
+        public Crowds Crowds { get; private set; }
         public bool Started { get; private set; }
         public Lang Lang { get { return Visit.Lang; } }
 
@@ -66,6 +68,7 @@ namespace Tanghalan.Vr
             Street = new Street(this);
             GoBag = new GoBagRoom(this);
             Drill = new DrillController(this);
+            Crowds = new Crowds(this);
 
             // the visitor starts in the lobby, facing the museum (GAMA moves them there too when it connects)
             Rig.Place(World.Point("spawn"), World.Facing("spawn"));
@@ -126,6 +129,7 @@ namespace Tanghalan.Vr
         {
             if (Scenario == null) return;
             Scenario.Tick(Time.deltaTime);
+            if (Crowds != null) Crowds.Tick(); // the museum and the street are alive before the visit begins too
             if (!Started) return;
             // the room the visitor is in: Bayani says a word about it, once per entry
             var feet = Rig.Feet;

@@ -1,6 +1,7 @@
 // Bayani, the museum's guide (from the web app): he walks beside the visitor, on their right so he never
-// blocks the view, and says things in a speech bubble over his head. In the drill he crouches, and on the
-// way out he walks ahead along the route to the evacuation center.
+// blocks the view, and says things in a speech bubble over his head, with a wave. In the drill he ducks and
+// covers his head, and on the way out he walks ahead along the route to the evacuation center. His model
+// moves as the other people do (Figure): legs and arms swing as he walks.
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -11,10 +12,10 @@ namespace Tanghalan.Vr
     {
         public Rig Rig;
         public World World;
-        Transform model;
+        Figure figure;
         Panel bubble;
         TextMeshPro words;
-        float sayUntil;
+        float sayUntil, waveUntil;
         List<Vector3> guide;
         int guideAt;
         Vector3 velocity;
@@ -23,8 +24,7 @@ namespace Tanghalan.Vr
         public void Init(World world, Rig rig, Vector3 start)
         {
             World = world; Rig = rig;
-            var go = world.Spawn("bayani", transform);
-            model = go != null ? go.transform : transform;
+            figure = Figure.Make(world, "bayani", transform);
             transform.position = start;
             bubble = new Panel(world, transform, "Bayani says", 1.1f, 0.42f, Palette.Cream);
             bubble.Root.transform.localPosition = new Vector3(0, 1.95f, 0);
@@ -37,6 +37,7 @@ namespace Tanghalan.Vr
         {
             if (string.IsNullOrEmpty(text)) return;
             words.text = text;
+            if (!bubble.Visible || Time.time > sayUntil) waveUntil = Time.time + 1.6f; // a wave as he starts to speak
             bubble.Visible = true;
             sayUntil = Time.time + (seconds > 0 ? seconds : Mathf.Clamp(text.Length / 14f, 4, 12));
         }
@@ -85,9 +86,7 @@ namespace Tanghalan.Vr
             RaycastHit hit;
             if (Physics.Raycast(transform.position + Vector3.up * 1.2f, Vector3.down, out hit, 3f, ~0, QueryTriggerInteraction.Ignore))
                 transform.position = new Vector3(transform.position.x, Mathf.Lerp(transform.position.y, hit.point.y, Time.deltaTime * 10), transform.position.z);
-            float bob = dist > 0.4f ? Mathf.Abs(Mathf.Sin(Time.time * 8)) * 0.03f : 0;
-            model.localPosition = new Vector3(0, bob, 0);
-            model.localScale = new Vector3(1, crouch ? 0.62f : 1, 1);
+            if (figure != null) figure.Pose = crouch ? Pose.Duck : dist > 0.4f && speed > 0 ? Pose.Walk : Time.time < waveUntil ? Pose.Wave : Pose.Stand;
             if (bubble.Visible)
             {
                 if (Time.time > sayUntil) bubble.Visible = false;

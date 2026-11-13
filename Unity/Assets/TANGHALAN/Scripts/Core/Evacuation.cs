@@ -4,9 +4,11 @@
 // the museum the safe route goes through the doorways to the Stop Hazards Early hall, out of its street door,
 // down the steps, straight over the bridge, and south along the sidewalk to the court.
 //
-// The neighbors (the Crowd) leave their three houses when the shaking stops and walk to the court. GAMA moves
-// them when it is connected (GAMA/models/TANGHALAN.gaml has the same people, routes and speeds); otherwise
-// this code does. All positions are in the web app's coordinates: metres, x east, z south, y up.
+// The neighbors (the Crowd) are outside on the street (StreetLife: sweeping, talking, playing). When the
+// visitor walks out after the shaking, they walk to the court too, along the west sidewalk; in the
+// aftershock they stop and duck until it passes. GAMA moves them when it is connected
+// (GAMA/models/TANGHALAN.gaml has the same people, routes and speeds); otherwise this code does.
+// All positions are in the web app's coordinates: metres, x east, z south, y up.
 using System;
 using System.Collections.Generic;
 
@@ -149,7 +151,7 @@ namespace Tanghalan
         public Evacuee(string id, bool adult, string shirt, double delay, double speed, P3[] path)
         {
             Id = id; Adult = adult; Shirt = shirt; Delay = delay; Speed = speed; Path = path; Position = path[0];
-            Heading = 90; // the houses' doors face east, towards the street
+            Heading = 180; // along the sidewalk, towards the court
         }
 
         public void Step(double t, double dt)
@@ -171,61 +173,78 @@ namespace Tanghalan
                     go = 0;
                 }
             }
-            if (next >= Path.Length) { Arrived = true; Walking = false; Heading = 0; }
+            if (next >= Path.Length) { Arrived = true; Walking = false; Heading = Floor.HeadingTo(Position, Crowd.CourtMiddle); }
         }
     }
 
-    /// <summary>The neighbors: two from each of the three houses, and two from the north end of the street.</summary>
+    /// <summary>
+    /// The neighbors: a grown-up and a child from each of the three houses, and two children playing at the
+    /// north end of the street. Each starts from where they are outside (StreetLife), and walks along the
+    /// west sidewalk to the court.
+    /// </summary>
     public sealed class Crowd
     {
         public readonly List<Evacuee> People = new List<Evacuee>();
         public double Time { get; private set; }
         public bool Started { get; private set; }
+        /// <summary>True while they stop and duck in the aftershock.</summary>
+        public bool Ducking { get; private set; }
 
-        // the houses' doors (z of each), and the places in the court where the people stand
-        static readonly double[] Houses = { -12.6, -6.6, -0.6 };
-        static readonly P3[] Spots =
+        // the houses' doors (z of each)
+        public static readonly double[] Houses = { -12.6, -6.6, -0.6 };
+        /// <summary>Where each one is outside before the drill (StreetLife): their place on the sidewalk or the doorstep.</summary>
+        public static readonly P3[] Homes =
         {
-            new P3(-25.9, 0, 5.2), new P3(-25.1, 0, 5.4), new P3(-26.0, 0, 6.3), new P3(-25.2, 0, 6.5),
-            new P3(-24.3, 0, 6.0), new P3(-24.4, 0, 7.1), new P3(-23.4, 0, 6.6), new P3(-25.5, 0, 7.4),
+            new P3(-22.4, -0.45, -12.6),   // sweeping in front of the first house
+            new P3(-23.18, -0.3, -12.25),  // on its doorstep
+            new P3(-22.5, -0.45, -7.25),   // talking, in front of Rico's house
+            new P3(-22.05, -0.45, -4.55),  // playing ball
+            new P3(-22.45, -0.45, -6.25),  // talking
+            new P3(-22.05, -0.45, -2.75),  // playing ball
+            new P3(-21.7, -0.45, -15.3),   // playing tag at the north end
+            new P3(-22.3, -0.45, -14.7),
         };
+        /// <summary>Where they stand at the court: its west side, clear of the board.</summary>
+        public static readonly P3[] Spots =
+        {
+            new P3(-26.3, 0, 4.2), new P3(-25.5, 0, 4.4), new P3(-26.4, 0, 5.1), new P3(-25.6, 0, 5.3),
+            new P3(-26.3, 0, 6.0), new P3(-25.5, 0, 6.2), new P3(-26.3, 0, 6.9), new P3(-25.5, 0, 7.1),
+        };
+        public static readonly P3 CourtMiddle = new P3(-24, 0, 5.6);
         static readonly string[] Shirts = { "c8782a", "e2588a", "2f74d0", "4caf50", "7a53c6", "f2b300", "2fa37a", "e2382b" };
 
         public Crowd()
         {
-            int k = 0;
-            for (int h = 0; h < Houses.Length; h++)
+            for (int k = 0; k < Homes.Length; k++)
             {
-                double z = Houses[h];
-                for (int m = 0; m < 2; m++, k++)
-                {
-                    double side = m == 0 ? -0.25 : 0.25;
-                    var path = new List<P3>
-                    {
-                        new P3(-23.6, -0.4, z + side), new P3(-22.8, -0.42, z + side), new P3(-22.3 + side, -0.45, z + 0.6),
-                        new P3(-22.3 + side, -0.45, 2.1), new P3(-22.3 + side, -0.15, 2.85), new P3(-22.8, 0, 3.6), Spots[k],
-                    };
-                    People.Add(new Evacuee("evacuee" + k, m == 0, Shirts[k], 1.0 + h * 2.5 + m * 0.8, m == 0 ? 1.05 : 1.15, path.ToArray()));
-                }
-            }
-            for (int m = 0; m < 2; m++, k++)
-            {
-                double side = m == 0 ? -0.3 : 0.3;
-                var path = new[]
-                {
-                    new P3(-22.0 + side, -0.45, -16.3), new P3(-22.0 + side, -0.45, 2.1), new P3(-22.0 + side, -0.15, 2.85),
-                    new P3(-22.6, 0, 3.6), Spots[k],
-                };
-                People.Add(new Evacuee("evacuee" + k, false, Shirts[k], 3.0 + m * 0.6, 1.2, path));
+                bool north = k >= 6;
+                int h = k / 2, m = k % 2; // the house, and grown-up (0) or child (1)
+                bool adult = !north && m == 0;
+                // the lane along the sidewalk: the grown-ups nearer the fence, the children nearer the canal
+                double lane = north ? -22.0 + (k == 6 ? 0.3 : -0.3) : -22.3 + (m == 0 ? -0.25 : 0.25);
+                var home = Homes[k];
+                var path = new List<P3> { home };
+                if (home.X < -23.0) path.Add(new P3(-22.7, -0.45, home.Z)); // out through the gate
+                path.Add(new P3(lane, -0.45, home.Z));
+                path.Add(new P3(lane, -0.45, 2.1));
+                path.Add(new P3(lane, -0.15, 2.85));
+                path.Add(new P3(north ? -22.6 : -22.8, 0, 3.6));
+                path.Add(Spots[k]);
+                double delay = north ? 3.0 + (k - 6) * 0.6 : 1.0 + h * 2.5 + m * 0.8;
+                double speed = north ? 1.2 : adult ? 1.05 : 1.15;
+                People.Add(new Evacuee("evacuee" + k, adult, Shirts[k], delay, speed, path.ToArray()));
             }
         }
 
-        /// <summary>They start to leave their houses (when the shaking stops).</summary>
+        /// <summary>They start to walk to the court (when the visitor walks out).</summary>
         public void Start() { Started = true; }
 
-        public void Step(double dt)
+        /// <param name="shaking">How strongly the ground shakes: in an aftershock they stop and duck.</param>
+        public void Step(double dt, double shaking = 0)
         {
             if (!Started) return;
+            Ducking = shaking > DrillJudge.Threshold;
+            if (Ducking) { foreach (var p in People) p.Walking = false; return; }
             Time += dt;
             foreach (var p in People) p.Step(Time, dt);
         }

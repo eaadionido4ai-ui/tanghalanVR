@@ -10,7 +10,7 @@ disaster art and stories, rebuilt with the tools of the SIMPLE VR contest:
 - **GAMA**: the storm over the street, the earthquake and the neighbors who walk to the evacuation center are an
   agent-based model in `GAMA/models`. It talks to the headsets through the SIMPLE GAMA plugin and the SIMPLE
   WebPlatform.
-- **Blender**: every model (the museum, the street, the go bag items, Bayani, the neighbors, the trash) passes
+- **Blender**: every model (the museum, the street, the go bag items, the people, the trash) passes
   through Blender. The `.blend` files are in `Blender/`, and the scripts that make them are in `Tools/blender`.
 
 The museum, its 19 sample works, their Filipino and English texts, and the Go Bag Room's rules all come from the
@@ -28,13 +28,21 @@ TANGHALAN web app. A tool exports them with the web app's own code, so the two s
    it. The board on the right shows whether GAMA is connected.
 2. **The halls.** Point at a drawing or a story stand and press the trigger. A card opens with the work, its text in
    Filipino or English, and Bayani's tip.
+   - You are not alone: a class on a field trip walks through the halls with their teacher, in three small
+     groups. They stop at the works and look; the teacher explains and a child points. They wait or go round you
+     when you are in their way, step aside when you come close or stand between them and a work, and move on
+     from a work you want to read. Now and then a child waves at you.
 3. **The street** (through the door in the *Stop Hazards Early* hall). This is the street from Rico's story "Ang
    Kanal sa Aming Kalye": the canal is full of trash.
+   - The neighbors are out: Aling Rosa sweeps the sidewalk with a *walis tingting* while her daughter sits on the
+     doorstep, Mang Ben (Rico's father) talks with Lola Ising, Rico and Lola Ising's granddaughter throw a ball,
+     and two children play tag at the end of the street. They stop for you when you are in their way.
    - Point at a piece of trash to pick it up, then point at the right bin: *nabubulok*, *nare-recycle* or
      *di-nabubulok* (RA 9003).
    - Then press **See what the rain would do**. GAMA replays two hours of heavy rain in about a minute and a half:
      the water rises in the street, and the gauge at Rico's door shows how deep it gets with the trash that is
-     left. The board compares this with a canal nobody cleaned.
+     left. The board compares this with a canal nobody cleaned. The neighbors go inside while it rains, and come
+     out again after.
 4. **The Go Bag Room.** The web app's Go Bag Challenge, in VR:
    - Take a bag at the packing table. On Easy, the things are on the tables; on Difficult, they are hidden in the
      cabinet, the drawers, the crate and the cooler.
@@ -49,12 +57,15 @@ TANGHALAN web app. A tool exports them with the web app's own code, so the two s
      own view never shakes, for comfort.
    - **Duck**: crouch, or press A. **Cover**: point at the nearest sturdy table and press the trigger; you are moved
      under it. **Hold**: squeeze a grip button until the shaking stops. Then wait a moment.
+   - The class does it too: the children and their teacher take cover under the tables near them (or drop and
+     cover their heads where there is none), and the neighbors drop where they are.
 6. **The evacuation.**
    - Arrows on the floor show the safe route: out of the street door, down the steps, over the bridge, along the
      sidewalk to the covered court, the barangay's evacuation center. Your go bag comes with you.
-   - Bayani walks ahead. The neighbors leave their houses and walk there too; GAMA moves them.
-   - An aftershock comes on the way: stop, duck and cover your head.
-7. **At the evacuation center.** Bayani checks that everyone is there, and the board shows the visit: the works
+   - Bayani walks ahead. The class walks out after you, and the neighbors walk along the sidewalk; GAMA moves the
+     neighbors.
+   - An aftershock comes on the way: stop, duck and cover your head. Everyone else stops and ducks too.
+7. **At the evacuation center.** Bayani counts everyone, the neighbors and the class, and the board shows the visit: the works
    you saw, the canal, the flood at Rico's door, the go bag's stars, and the drill (how fast you ducked and took
    cover, how long you held on, your walk to the center). It also says what you left out, such as a canal you
    did not clear.
@@ -125,10 +136,14 @@ Unity/                          the SIMPLE Unity Template VR (Unity 6000.3.8f1),
       MuseumData, GoBagItems    the rooms, works and items, written from the web app's content (Generated/)
       StreetPlan, FloodModel    the street's grid and its flood
       Waste                     the canal's trash and the three bins
-      Drill, Evacuation         when the earthquake comes, Duck-Cover-Hold, the way out, the neighbors
+      Drill, Evacuation         when the earthquake comes, Duck-Cover-Hold, the way out, the neighbors' walk
+      Visitors, StreetLife      the class in the museum, and the neighbors on the street: what each one does
+      People, NavGrid, Plan     a person's place and pose; where people can walk in the museum, and the way (A*)
+      MuseumPlan (Generated/)   the museum's walls, furniture and sturdy tables, from the exported model
       Strings, Visit            every text in English and Filipino; the visit and its summary
     Scripts/Runtime/            the Unity side: TanghalanApp (the visit), World (loading the models), Rig (the player),
                                 Ui (panels, pointing), Tour, Street, GoBagRoom, DrillController, Bayani, Sfx,
+                                Crowds (the other people), Figure (a person's legs and arms, moved without a skeleton),
                                 Scenario (GAMA or local), TanghalanSimulationManager (the template's SimulationManager)
     Tests/EditMode/             the tests, for Unity's Test Runner and for `dotnet test Tests`
     Resources/TANGHALAN/        the models (FBX), textures and materials
@@ -137,7 +152,7 @@ GAMA/                           the SIMPLE learning package: settings.json, mode
                                 models/TANGHALAN VR.gaml (the link to Unity)
 Blender/                        the Blender files of the museum, the street and the props
 Tools/
-  web-export/                   builds the museum, the street and the props with the web app's three.js code, and exports them
+  web-export/                   builds the museum, the street, the props and the people with the web app's three.js code, and exports them
   blender/                      turns the exports into .blend and FBX files, with one palette of colors; renders previews
   build_assets.sh               runs the whole asset pipeline
   unity_meta.py, make_materials.py, make_scene.py    write Unity's .meta files, materials, main scene and build settings
@@ -164,12 +179,13 @@ Unity a point (x, y, z) is at (x, y, -z), and in GAMA it is at (x + 30, z + 25).
 
 | Check | How | Result |
 |---|---|---|
-| The rules match the web app | the web app's tests, ported (`Tests/`); the same go bag rounds for the same seeds | 43 tests pass |
+| The rules match the web app | the web app's tests, ported (`Tests/`); the same go bag rounds for the same seeds | 55 tests pass |
 | The flood | C# against the Python reference, step by step; water conserved; more trash, deeper water | pass |
 | The drill and the evacuation | when the earthquake comes (alone, with a class, with GAMA silent); scored runs of the drill; every room has a way out through a doorway; all neighbors arrive | pass |
 | Unity, GAMA and the reference agree | `Tools/check_constants.py` | pass |
 | The Unity scripts compile | `Tools/unity-compile-check`: the template and TANGHALAN VR, against Unity 6000.3.8f1's libraries and the packages' sources | pass |
-| The models look right | renders from the Blender files (`Tools/blender/render_previews.py`) | checked by eye |
+| The other people | the visitors' ways stay clear of walls and furniture and go through the doorways; in ten minutes they look at many works; they keep out of the visitor's way and out of the line to the work being read; they take cover, stay down, duck in the aftershock and all reach the court; the neighbors sweep, sit, talk, throw the ball and play tag, go in when it rains and come out after, and reach the court | pass |
+| The models look right | renders from the Blender files (`Tools/blender/render_previews.py`); every pose of the people rendered with the joint angles of `Figure.cs` | checked by eye |
 | **Playing in the Unity editor and on a Quest** | | **not done yet** |
 | **The GAMA model in GAMA** | GAMA could not be run where this was built; the model was checked against the SIMPLE plugin's source | **not done yet** |
 
@@ -184,6 +200,8 @@ So the first things to do are: open the project in Unity 6000.3.8f1, play the ma
 - Record narration, so the works and Bayani can be heard as well as read.
 - Build the Fire Safety Room's game in VR, on its ported rules.
 - Show classmates to each other in the museum (the SIMPLE plugin can; TANGHALAN VR does not use it yet).
+- Make the museum's other visitors agents in GAMA, as the neighbors are, so that a class on GAMA sees the same
+  visitors and GAMA runs their walk out (for now each headset moves its own).
 - A drill for a visitor who is outdoors when the earthquake comes. For now, a visitor on the street is called
   back inside the museum first.
 - Replace the sample works with learners' own, with consent.

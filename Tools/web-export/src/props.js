@@ -1,11 +1,12 @@
-// The things that move: the 24 go bag items (web-src/rooms/items3d.js), the go bag you carry, Bayani
-// (web-src/museum/characters.js), and the pieces of trash in the canal (new for TANGHALAN VR).
-// Each is exported on its own, standing on y = 0 at the origin.
+// The things that move: the 24 go bag items (web-src/rooms/items3d.js), the go bag you carry, the people
+// (people.js: Bayani, the neighbors, the visitors and their teacher), what the neighbors hold, and the
+// pieces of trash in the canal (new for TANGHALAN VR). Each is exported on its own, standing on y = 0 at the
+// origin.
 
 import { makeItem } from '../web-src/rooms/items3d.js';
-import { makeKid } from '../web-src/museum/characters.js';
 import { ITEMS } from '../web-src/rooms/logic.js';
 import { calibration, flatten } from './tag.js';
+import { NEIGHBORS, VISITORS, TEACHER, WHITE, NAVY, makeAdult, makeChild, exportPerson, makeBroom, makeBall } from './people.js';
 
 // The trash: [model, sort, name, Filipino name, emoji for its icon]
 // sort: bio = nabubulok (biodegradable), rec = nare-recycle (recyclable), res = di-nabubulok (residual)
@@ -14,11 +15,6 @@ export const WASTE_MODELS = [
   ['bottle', 'rec', '🧴'], ['can', 'rec', '🥫'], ['glassbottle', 'rec', '🍾'], ['cardboard', 'rec', '📦'],
   ['sachet', 'res', '🍬'], ['styro', 'res', '🥡'], ['plasticbag', 'res', '🛍️'], ['slipper', 'res', '🩴'],
 ];
-
-// The neighbors: shirt (also the model's name), hair, pants, skin. The shirts are Tanghalan.Crowd's.
-export const PEOPLE = [['c8782a', 0x2b1d16, 0x35506b, 0xc68a55], ['e2588a', 0x3a2418, 0x4a3b6b, 0xd69a63], ['2f74d0', 0x1d1410, 0x3d3127, 0xb87a48],
-  ['4caf50', 0x2b1d16, 0x35506b, 0xe0aa78], ['7a53c6', 0x4a2f20, 0x2f3f4f, 0xc68a55], ['f2b300', 0x1d1410, 0x35506b, 0xd69a63],
-  ['2fa37a', 0x2b1d16, 0x5a3a1a, 0xb87a48], ['e2382b', 0x3a2418, 0x35506b, 0xe0aa78]];
 
 export function makeWaste(T, id) {
   const g = new T.Group();
@@ -116,18 +112,17 @@ export function buildProps(T) {
   ITEMS.forEach((it) => one('item_' + it.id, makeItem(T, it.id)));
   WASTE_MODELS.forEach(([id]) => one('waste_' + id, makeWaste(T, id)));
   one('gobag', makeGoBag(T));
-  // the neighbors who walk to the evacuation center (Tanghalan.Crowd): one model for each shirt
-  PEOPLE.forEach(([shirt, hair, pants, skin]) => {
-    const k = makeKid(T, { shirt: parseInt(shirt, 16), hair, pants, skin, face: true });
-    k.pose(0, 0, 0, 0.016);
-    const turn = new T.Group(); turn.rotation.y = Math.PI; turn.add(k.group);
-    one('person_' + shirt, turn, (o) => o.material.transparent && o.material.opacity < 0.5);
+  // the people, in parts that Unity moves (people.js): the neighbors (one model for each shirt, as in
+  // Tanghalan.Crowd), the visitors and their teacher, and Bayani
+  NEIGHBORS.forEach(([shirt, adult, o]) => {
+    const look = Object.assign({ shirt: parseInt(shirt, 16) }, o);
+    out['person_' + shirt] = exportPerson(T, 'person_' + shirt, adult ? makeAdult(T, look) : makeChild(T, look));
   });
-  // Bayani, waving, turned to face -z so that in Unity he faces forward
-  const b = makeKid(T, { shirt: 0x1f6f8b, hat: true, face: true, cape: true, star: true, wave: true, skin: 0xe8ab70 });
-  b.pose(0, 0, 0.26, 0.016);
-  const turn = new T.Group(); turn.rotation.y = Math.PI; turn.add(b.group);
-  one('bayani', turn, (o) => o.material.transparent && o.material.opacity < 0.5); // not the soft shadow
+  VISITORS.forEach(([name, o]) => { out[name] = exportPerson(T, name, makeChild(T, Object.assign({ shirt: WHITE, pants: NAVY }, o))); });
+  out.teacher = exportPerson(T, 'teacher', makeAdult(T, TEACHER));
+  out.bayani = exportPerson(T, 'bayani', makeChild(T, { shirt: 0x1f6f8b, hat: true, cape: true, star: true, skin: 0xe8ab70 }));
+  one('prop_broom', makeBroom(T));
+  one('prop_ball', makeBall(T));
   return out;
 }
 
